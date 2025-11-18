@@ -15,8 +15,11 @@ ENV MY_SECRET_TOKEN=${MY_SECRET_TOKEN} \
     WORDNIK_API_KEY=${WORDNIK_API_KEY}
 
 # 生產環境將配置打包到映像中
-COPY config/ /app/config/
-COPY assets/ /app/assets/
+COPY config /app/config
+COPY assets /app/assets
+
+# 驗證配置檔案是否成功複製
+RUN ls -laR /app/config /app/assets
 
 # 暴露端口
 EXPOSE 8080
