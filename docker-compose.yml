@@ -1,12 +1,10 @@
 services:
   glance:
     container_name: glance
-    # 使用本地 Dockerfile 構建映像
+    # 使用本地開發用的 Dockerfile 構建映像
     build:
       context: .
       dockerfile: Dockerfile
-      # 指定使用開發環境的 stage
-      target: development
       args:
         # 從 .env 檔案傳入構建參數
         MY_SECRET_TOKEN: ${MY_SECRET_TOKEN}

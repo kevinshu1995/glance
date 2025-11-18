@@ -1,5 +1,5 @@
 # ============================================
-# Development Dockerfile for Local Use
+# Production Dockerfile for Zeabur/Cloud Deployment
 # ============================================
 # 使用 glance 官方映像作為基礎
 FROM glanceapp/glance:latest
@@ -14,8 +14,9 @@ ARG WORDNIK_API_KEY
 ENV MY_SECRET_TOKEN=${MY_SECRET_TOKEN} \
     WORDNIK_API_KEY=${WORDNIK_API_KEY}
 
-# 開發環境不複製配置，透過 docker-compose volume 掛載
-# 這樣可以即時修改配置檔案而不需要重新建置映像
+# 生產環境將配置打包到映像中
+COPY config/ /app/config/
+COPY assets/ /app/assets/
 
 # 暴露端口
 EXPOSE 8080
