@@ -1,5 +1,7 @@
-# 使用 glance 官方映像作為基礎
-FROM glanceapp/glance:latest
+# ============================================
+# Base Stage - 共用基礎配置
+# ============================================
+FROM glanceapp/glance:latest AS base
 
 # 設置工作目錄
 WORKDIR /app
@@ -11,12 +13,24 @@ ARG WORDNIK_API_KEY
 ENV MY_SECRET_TOKEN=${MY_SECRET_TOKEN} \
     WORDNIK_API_KEY=${WORDNIK_API_KEY}
 
-# 僅在生產環境時複製配置（開發環境透過 volume 掛載）
-# 如需打包配置到映像中，請取消以下註解：
-# COPY config/ /app/config/
-# COPY assets/ /app/assets/
-
 # 暴露端口
 EXPOSE 8080
+
+# ============================================
+# Development Stage - 開發環境
+# ============================================
+FROM base AS development
+
+# 開發環境不複製配置，使用 docker-compose volume 掛載
+# 容器啟動命令（繼承自基礎映像）
+
+# ============================================
+# Production Stage - 生產環境
+# ============================================
+FROM base AS production
+
+# 生產環境將配置打包到映像中
+COPY config/ /app/config/
+COPY assets/ /app/assets/
 
 # 容器啟動命令（繼承自基礎映像）
