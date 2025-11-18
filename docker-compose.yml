@@ -1,14 +1,25 @@
 services:
   glance:
     container_name: glance
-    image: glanceapp/glance
+    # 使用本地 Dockerfile 構建映像
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # 從 .env 檔案傳入構建參數
+        MY_SECRET_TOKEN: ${MY_SECRET_TOKEN}
+        WORDNIK_API_KEY: ${WORDNIK_API_KEY}
+    # image 名稱（構建後的本地映像）
+    image: glance-local:latest
     restart: unless-stopped
     volumes:
+      # 開發環境掛載配置，可即時修改
       - ./config:/app/config
       - ./assets:/app/assets
       - /etc/localtime:/etc/localtime:ro
-      # Optionally, also mount docker socket if you want to use the docker containers widget
+      # 選用：如需使用 docker containers widget，取消以下註解
       # - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - 8080:8080
+    # 環境變數從 .env 檔案載入
     env_file: .env
