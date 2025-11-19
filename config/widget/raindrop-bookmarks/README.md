@@ -30,7 +30,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
       {{/* Configuration options */}}
       {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
       {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
-      {{ $maxColumns := 2 }}  {{/* Maximum columns for items (1-2) */}}
+      {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
       {{ $userReq := newRequest "https://api.raindrop.io/rest/v1/user"
@@ -67,6 +67,11 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
             color: var(--color-text-highlight);
           }
 
+          /* Enable container queries for responsive grid */
+          .container-raindrop-bookmarks {
+            container-type: inline-size;
+          }
+
           /* Fix summary arrow line-height */
           .container-raindrop-bookmarks .summary::after {
             line-height: 25px;
@@ -101,23 +106,32 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
             opacity: 1;
           }
 
-          /* Responsive grid for bookmarks */
-          {{ if eq $maxColumns 2 }}
+          /* Responsive grid for bookmarks using container queries */
+          .grid-raindrop-bookmarks {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(3, 1fr);
+          }
+          @container (max-width: 900px) {
+            .grid-raindrop-bookmarks { grid-template-columns: repeat(2, 1fr); }
+          }
+          @container (max-width: 640px) {
             .grid-raindrop-bookmarks {
-              display: grid;
-              gap: 1.5rem;
-              grid-template-columns: repeat(2, 1fr);
+              grid-template-columns: 1fr;
             }
-            @media (max-width: 640px) {
-              .grid-raindrop-bookmarks { grid-template-columns: 1fr; }
+
+            /* 調整書籤內的圖片和佔位符大小 */
+            .grid-raindrop-bookmarks img.thumbnail,
+            .grid-raindrop-bookmarks .shrink-0 {
+              width: 24px !important;
+              height: 24px !important;
             }
-          {{ else }}
-            .grid-raindrop-bookmarks {
-              display: flex;
-              flex-direction: column;
-              gap: 1.5rem;
+
+            /* 調整時間和 tag 字級為 font-size-h5 */
+            .grid-raindrop-bookmarks .list-horizontal-text .size-h3 {
+              font-size: var(--font-size-h5);
             }
-          {{ end }}
+          }
         </style>
 
         {{/* Main groups list */}}
@@ -139,12 +153,12 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
               {{/* Group level (Layer 1) */}}
               <details {{ if $autoOpenFirstGroup }}open{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
-                  <div class="flex items-center gap-10">
+                  <div class="flex items-center gap-10 min-width-0 flex-1">
                     {{/* Group icon */}}
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
                       <path d="M1 3.5C1 2.67157 1.67157 2 2.5 2H5.17157C5.70201 2 6.21071 2.21071 6.58579 2.58579L7.41421 3.41421C7.78929 3.78929 8.29799 4 8.82843 4H13.5C14.3284 4 15 4.67157 15 5.5V12.5C15 13.3284 14.3284 14 13.5 14H2.5C1.67157 14 1 13.3284 1 12.5V3.5Z" fill="currentColor" opacity="0.7"/>
                     </svg>
-                    <span class="size-h2">{{ $groupTitle }}</span>
+                    <span class="size-h2 text-truncate">{{ $groupTitle }}</span>
                   </div>
                   <div class="flex items-center gap-5 size-h3 color-subdue" style="margin-right: 0.5rem;">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -155,7 +169,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                 </summary>
 
                 {{/* Group content - collections in this group */}}
-                <div style="padding-left: 3rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
+                <div style="padding-left: 1.5rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
                   <ul class="list list-gap-14">
                     {{/* Iterate through collections in this group */}}
                     {{ range $collIndex, $collId := $groupCollectionIds }}
@@ -191,16 +205,16 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                             {{/* Collection level (Layer 2) */}}
                             <details {{ if and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0) }}open{{ end }}>
                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
-                                <div class="flex items-center gap-10">
+                                <div class="flex items-center gap-10 min-width-0 flex-1">
                                   {{/* Folder icon */}}
                                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
                                     <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.6"/>
                                   </svg>
                                   {{/* Color indicator */}}
                                   {{ if $collectionColor }}
-                                    <span class="rounded" style="width: 10px; height: 10px; background-color: {{ $collectionColor }}; display: inline-block;"></span>
+                                    <span class="rounded" style="width: 10px; height: 10px; background-color: {{ $collectionColor }}; flex-shrink: 0; display: inline-block;"></span>
                                   {{ end }}
-                                  <span class="size-h3">{{ $collectionTitle }}</span>
+                                  <span class="size-h3 text-truncate">{{ $collectionTitle }}</span>
                                 </div>
                                 <div class="flex items-center gap-10 size-h3 color-subdue" style="margin-right: 0.5rem;">
                                   {{ if gt $childrenCount 0 }}
@@ -224,7 +238,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                               </summary>
 
                               {{/* Collection content */}}
-                              <div style="padding-left: 3rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
+                              <div style="padding-left: 1.5rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
                                 {{/* Display sub-collections (Layer 3) */}}
                                 {{ if gt $childrenCount 0 }}
                                   <div style="margin-bottom: 1.5rem;">
@@ -246,15 +260,15 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                           <li>
                                             <details>
                                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
-                                                <div class="flex items-center gap-10">
+                                                <div class="flex items-center gap-10 min-width-0 flex-1">
                                                   {{/* Folder icon */}}
                                                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
                                                     <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
                                                   </svg>
                                                   {{ if $childColor }}
-                                                    <span class="rounded" style="width: 8px; height: 8px; background-color: {{ $childColor }}; display: inline-block;"></span>
+                                                    <span class="rounded" style="width: 8px; height: 8px; background-color: {{ $childColor }}; flex-shrink: 0; display: inline-block;"></span>
                                                   {{ end }}
-                                                  <span class="size-h3">{{ $childTitle }}</span>
+                                                  <span class="size-h3 text-truncate">{{ $childTitle }}</span>
                                                 </div>
                                                 {{ if gt $childItemsCount 0 }}
                                                   <div class="flex items-center gap-5 size-h3 color-subdue" style="margin-right: 0.5rem;">
@@ -268,7 +282,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                               </summary>
 
                                               {{/* Sub-collection raindrops */}}
-                                              <div style="padding-left: 3rem; margin-top: 0.75rem;">
+                                              <div style="padding-left: 1.5rem; margin-top: 0.75rem;">
                                                 {{ if gt $childItemsCount 0 }}
                                                   <div class="grid-raindrop-bookmarks">
                                                     {{ range $allRaindrops }}
@@ -447,12 +461,22 @@ The template includes several configuration variables at the top:
 ```yaml
 {{ $autoOpenFirstGroup := true }}        # Auto-open all groups by default
 {{ $autoOpenFirstCollection := true }}   # Auto-open first collection in each group
-{{ $maxColumns := 2 }}                   # Display bookmarks in 2 columns (1 or 2)
+{{ $showCover := true }}                 # Show cover images for bookmarks
 ```
 
 - **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
 - **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
-- **`$maxColumns`**: Choose between `1` (single column) or `2` (two-column grid on wider screens)
+- **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
+
+### Responsive Grid Layout
+
+The widget automatically adjusts the number of columns based on the container width using container queries:
+
+- **> 900px**: 3 columns
+- **640px - 900px**: 2 columns
+- **< 640px**: 1 column (mobile) with optimized compact layout:
+  - Cover images reduced to 24px × 24px
+  - Date and tag text size reduced to `--font-size-h5`
 
 ### Cache Duration
 
