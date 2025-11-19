@@ -1,18 +1,20 @@
 # Raindrop Bookmarks Widget
 
-A comprehensive Raindrop.io bookmarks widget that displays your collections, child collections, and bookmarks with full hierarchy support.
+A comprehensive Raindrop.io bookmarks widget that displays your groups, collections, sub-collections, and bookmarks with full three-level hierarchy support.
 
 ![Preview](preview.png)
 
 ## Features
 
-- 📁 **Hierarchical Collections**: Display root collections and their child collections with folder icons
-- 🔖 **Bookmark Details**: Shows cover images, titles, tags, and creation dates
-- 🎨 **Collection Colors**: Visual color indicators for each collection
-- 🔄 **Auto-refresh**: 24-hour cache with manual refresh support
-- ⚠️ **Smart Limitations**: Displays the 50 most recent bookmarks (API limitation)
-- 🔗 **Quick Access**: Click widget title to open Raindrop.io
-- 🔐 **Token Error Handling**: Automatic redirect to settings page when token expires
+-   📁 **Three-Level Hierarchy**: Display groups, collections, and sub-collections with proper ordering
+-   🗂️ **Custom Sorting**: Respects your Raindrop.io group organization and collection order
+-   🔖 **Bookmark Details**: Shows cover images, titles, tags, and creation dates
+-   🎨 **Collection Colors**: Visual color indicators for each collection
+-   🔄 **Auto-refresh**: 24-hour cache with manual refresh support
+-   ⚠️ **Smart Limitations**: Displays the 50 most recent bookmarks (API limitation)
+-   ✨ **Auto-expand Options**: Configure which groups and collections open by default
+-   🔗 **Quick Access**: Click widget title to open Raindrop.io
+-   🔐 **Token Error Handling**: Automatic redirect to settings page when token expires
 
 ## Configuration
 
@@ -26,8 +28,15 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
   cache: 1d
   template: |
       {{/* Configuration options */}}
-      {{ $autoOpenFirst := true }}  {{/* Auto-open first folder, set to false to disable */}}
+      {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
+      {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
       {{ $maxColumns := 2 }}  {{/* Maximum columns for items (1-2) */}}
+
+      {{/* Fetch user data for groups */}}
+      {{ $userReq := newRequest "https://api.raindrop.io/rest/v1/user"
+          | withHeader "Authorization" "Bearer ${RAINDROP_TOKEN}"
+          | getResponse
+      }}
 
       {{/* Fetch child collections */}}
       {{ $childrensReq := newRequest "https://api.raindrop.io/rest/v1/collections/childrens"
@@ -43,8 +52,9 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
       }}
 
       {{/* Check if all API calls succeeded */}}
-      {{ if and (eq .Response.StatusCode 200) (eq $childrensReq.Response.StatusCode 200) (eq $raindropsReq.Response.StatusCode 200) }}
-        {{ $rootCollections := .JSON.Array "items" }}
+      {{ if and (eq .Response.StatusCode 200) (eq $userReq.Response.StatusCode 200) (eq $childrensReq.Response.StatusCode 200) (eq $raindropsReq.Response.StatusCode 200) }}
+        {{ $allCollections := .JSON.Array "items" }}
+        {{ $userGroups := $userReq.JSON.Array "user.groups" }}
         {{ $childCollections := $childrensReq.JSON.Array "items" }}
         {{ $allRaindrops := $raindropsReq.JSON.Array "items" }}
 
@@ -62,12 +72,26 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
             line-height: 25px;
           }
 
-          /* Override global details[open] .summary::after styles within this component */
+          /*
+           * Arrow rotation strategy for nested details (3 levels)
+           *
+           * IMPORTANT: This uses a two-step override approach to neutralize Glance's
+           * global styles that may interfere with our custom rotation logic.
+           *
+           * Step 1: Reset all nested summaries to 0deg (right-pointing arrow)
+           *         This overrides any global Glance styles
+           * Step 2: Apply -90deg to direct children (down-pointing arrow when open)
+           *         This creates the actual rotation for each level
+           *
+           * Result: Each details level independently controls its own arrow rotation
+           */
+
+          /* Step 1: Override Glance global styles - reset all nested summaries */
           .container-raindrop-bookmarks details[open] .summary::after {
             rotate: 0deg;
           }
 
-          /* Fix nested details arrow rotation - use direct child selector */
+          /* Step 2: Apply rotation to direct child summary only */
           .container-raindrop-bookmarks details[open] > .summary::after {
             rotate: -90deg;
           }
@@ -96,222 +120,264 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
           {{ end }}
         </style>
 
-        {{/* Main collections list */}}
+        {{/* Main groups list */}}
         <div class="container-raindrop-bookmarks">
           <ul class="list list-gap-20">
-            {{/* Iterate through root collections */}}
-            {{ range $index, $collection := $rootCollections }}
-            {{ $collectionId := .Int "_id" }}
-            {{ $collectionTitle := .String "title" }}
-            {{ $collectionColor := .String "color" }}
+            {{/* Iterate through user groups */}}
+            {{ range $groupIndex, $group := $userGroups }}
+            {{ $groupTitle := .String "title" }}
+            {{ $groupHidden := .Bool "hidden" }}
+            {{ $groupCollectionIds := .Array "collections" }}
 
-            {{/* Count child collections */}}
-            {{ $childrenCount := 0 }}
-            {{ range $childCollections }}
-              {{ if eq (.Int "parent.$id") $collectionId }}
-                {{ $childrenCount = add $childrenCount 1 }}
-              {{ end }}
-            {{ end }}
+            {{/* Skip hidden groups */}}
+            {{ if not $groupHidden }}
 
-            {{/* Count actual items in this collection */}}
-            {{ $itemsCount := 0 }}
-            {{ range $allRaindrops }}
-              {{ if eq (.Int "collection.$id") $collectionId }}
-                {{ $itemsCount = add $itemsCount 1 }}
-              {{ end }}
-            {{ end }}
+            {{/* Count collections in this group */}}
+            {{ $groupCollectionCount := len $groupCollectionIds }}
 
             <li>
-              <details {{ if and $autoOpenFirst (eq $index 0) }}open{{ end }}>
+              {{/* Group level (Layer 1) */}}
+              <details {{ if $autoOpenFirstGroup }}open{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                   <div class="flex items-center gap-10">
-                    {{/* Folder icon */}}
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
-                      <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.6"/>
+                    {{/* Group icon */}}
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
+                      <path d="M1 3.5C1 2.67157 1.67157 2 2.5 2H5.17157C5.70201 2 6.21071 2.21071 6.58579 2.58579L7.41421 3.41421C7.78929 3.78929 8.29799 4 8.82843 4H13.5C14.3284 4 15 4.67157 15 5.5V12.5C15 13.3284 14.3284 14 13.5 14H2.5C1.67157 14 1 13.3284 1 12.5V3.5Z" fill="currentColor" opacity="0.7"/>
                     </svg>
-                    {{/* Color indicator */}}
-                    {{ if $collectionColor }}
-                      <span class="rounded" style="width: 10px; height: 10px; background-color: {{ $collectionColor }}; display: inline-block;"></span>
-                    {{ end }}
-                    <span class="size-h3">{{ $collectionTitle }}</span>
+                    <span class="size-h2">{{ $groupTitle }}</span>
                   </div>
-                  <div class="flex items-center gap-10 size-h3 color-subdue" style="margin-right: 0.5rem;">
-                    {{ if gt $childrenCount 0 }}
-                      <div class="flex items-center gap-5">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                          <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
-                        </svg>
-                        <span>{{ $childrenCount }}</span>
-                      </div>
-                    {{ end }}
-                    {{ if gt $itemsCount 0 }}
-                      <div class="flex items-center gap-5">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                          <path d="M2 3.5C2 2.67157 2.67157 2 3.5 2H12.5C13.3284 2 14 2.67157 14 3.5V12.5C14 13.3284 13.3284 14 12.5 14H3.5C2.67157 14 2 13.3284 2 12.5V3.5Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                          <path d="M5 7H11M5 9.5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                        <span>{{ $itemsCount }}</span>
-                      </div>
-                    {{ end }}
+                  <div class="flex items-center gap-5 size-h3 color-subdue" style="margin-right: 0.5rem;">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
+                    </svg>
+                    <span>{{ $groupCollectionCount }}</span>
                   </div>
                 </summary>
 
-                {{/* Collection content */}}
+                {{/* Group content - collections in this group */}}
                 <div style="padding-left: 3rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
-                  {{ $hasChildren := gt $childrenCount 0 }}
+                  <ul class="list list-gap-14">
+                    {{/* Iterate through collections in this group */}}
+                    {{ range $collIndex, $collId := $groupCollectionIds }}
+                      {{/* Extract ID from GJSON result by removing braces */}}
+                      {{ $collIdStr := printf "%v" $collId }}
+                      {{ $collIdStr = trimPrefix "{" $collIdStr }}
+                      {{ $collIdStr = trimSuffix "}" $collIdStr }}
 
-                  {{/* Display child collections if any */}}
-                  {{ if $hasChildren }}
-                    <div style="margin-bottom: 1.5rem;">
-                      <ul class="list list-gap-14">
-                        {{ range $childCollections }}
-                          {{ if eq (.Int "parent.$id") $collectionId }}
-                            {{ $childId := .Int "_id" }}
-                            {{ $childTitle := .String "title" }}
-                            {{ $childColor := .String "color" }}
+                      {{/* Find the collection in $allCollections */}}
+                      {{ range $allCollections }}
+                        {{ if eq (printf "%v" (.Int "_id")) $collIdStr }}
+                          {{ $collectionId := .Int "_id" }}
+                          {{ $collectionTitle := .String "title" }}
+                          {{ $collectionColor := .String "color" }}
 
-                            {{/* Count actual items in this child collection */}}
-                            {{ $childItemsCount := 0 }}
-                            {{ range $allRaindrops }}
-                              {{ if eq (.Int "collection.$id") $childId }}
-                                {{ $childItemsCount = add $childItemsCount 1 }}
-                              {{ end }}
+                          {{/* Count child collections */}}
+                          {{ $childrenCount := 0 }}
+                          {{ range $childCollections }}
+                            {{ if eq (.Int "parent.$id") $collectionId }}
+                              {{ $childrenCount = add $childrenCount 1 }}
                             {{ end }}
+                          {{ end }}
 
-                            <li>
-                              <details>
-                                <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
-                                  <div class="flex items-center gap-10">
-                                    {{/* Folder icon */}}
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
-                                      <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
-                                    </svg>
-                                    {{ if $childColor }}
-                                      <span class="rounded" style="width: 8px; height: 8px; background-color: {{ $childColor }}; display: inline-block;"></span>
-                                    {{ end }}
-                                    <span class="size-h3">{{ $childTitle }}</span>
-                                  </div>
-                                  {{ if gt $childItemsCount 0 }}
-                                    <div class="flex items-center gap-5 size-h3 color-subdue" style="margin-right: 0.5rem;">
-                                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                          {{/* Count items in this collection */}}
+                          {{ $itemsCount := 0 }}
+                          {{ range $allRaindrops }}
+                            {{ if eq (.Int "collection.$id") $collectionId }}
+                              {{ $itemsCount = add $itemsCount 1 }}
+                            {{ end }}
+                          {{ end }}
+
+                          <li>
+                            {{/* Collection level (Layer 2) */}}
+                            <details {{ if and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0) }}open{{ end }}>
+                              <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
+                                <div class="flex items-center gap-10">
+                                  {{/* Folder icon */}}
+                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
+                                    <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.6"/>
+                                  </svg>
+                                  {{/* Color indicator */}}
+                                  {{ if $collectionColor }}
+                                    <span class="rounded" style="width: 10px; height: 10px; background-color: {{ $collectionColor }}; display: inline-block;"></span>
+                                  {{ end }}
+                                  <span class="size-h3">{{ $collectionTitle }}</span>
+                                </div>
+                                <div class="flex items-center gap-10 size-h3 color-subdue" style="margin-right: 0.5rem;">
+                                  {{ if gt $childrenCount 0 }}
+                                    <div class="flex items-center gap-5">
+                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                        <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
+                                      </svg>
+                                      <span>{{ $childrenCount }}</span>
+                                    </div>
+                                  {{ end }}
+                                  {{ if gt $itemsCount 0 }}
+                                    <div class="flex items-center gap-5">
+                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                                         <path d="M2 3.5C2 2.67157 2.67157 2 3.5 2H12.5C13.3284 2 14 2.67157 14 3.5V12.5C14 13.3284 13.3284 14 12.5 14H3.5C2.67157 14 2 13.3284 2 12.5V3.5Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                         <path d="M5 7H11M5 9.5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                       </svg>
-                                      <span>{{ $childItemsCount }}</span>
+                                      <span>{{ $itemsCount }}</span>
                                     </div>
                                   {{ end }}
-                                </summary>
+                                </div>
+                              </summary>
 
-                                {{/* Child collection raindrops */}}
-                                <div style="padding-left: 3rem; margin-top: 0.75rem;">
-                                  {{ if gt $childItemsCount 0 }}
-                                    <div class="grid-raindrop-bookmarks">
-                                      {{ range $allRaindrops }}
-                                        {{ if eq (.Int "collection.$id") $childId }}
-                                          <div style="min-width: 0;">
-                                            <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
-                                              {{/* Cover image or placeholder */}}
-                                              {{ if .String "cover" }}
-                                                <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
-                                              {{ else }}
-                                                <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
-                                                  <span class="size-h3 color-subdue">#</span>
-                                                </div>
-                                              {{ end }}
+                              {{/* Collection content */}}
+                              <div style="padding-left: 3rem; margin-top: 1rem; border-left: 2px solid var(--color-separator);">
+                                {{/* Display sub-collections (Layer 3) */}}
+                                {{ if gt $childrenCount 0 }}
+                                  <div style="margin-bottom: 1.5rem;">
+                                    <ul class="list list-gap-14">
+                                      {{ range $childCollections }}
+                                        {{ if eq (.Int "parent.$id") $collectionId }}
+                                          {{ $childId := .Int "_id" }}
+                                          {{ $childTitle := .String "title" }}
+                                          {{ $childColor := .String "color" }}
 
-                                              {{/* Raindrop details */}}
-                                              <div class="flex-column min-width-0 flex-1">
-                                                <div class="size-h3 text-truncate margin-bottom-3">{{ .String "title" }}</div>
+                                          {{/* Count items in sub-collection */}}
+                                          {{ $childItemsCount := 0 }}
+                                          {{ range $allRaindrops }}
+                                            {{ if eq (.Int "collection.$id") $childId }}
+                                              {{ $childItemsCount = add $childItemsCount 1 }}
+                                            {{ end }}
+                                          {{ end }}
 
-                                                <ul class="list-horizontal-text">
-                                                  <li>
-                                                    <span class="size-h3 color-subdue">{{ .String "created" | parseTime "RFC3339" | formatTime "DateOnly" }}</span>
-                                                  </li>
-                                                  {{ $tags := .Array "tags" }}
-                                                  {{ range $tags }}
-                                                    {{ $tagStr := printf "%v" . }}
-                                                    {{ $tagStr = trimPrefix "{" $tagStr }}
-                                                    {{ $tagStr = trimSuffix "}" $tagStr }}
-                                                    <li>
-                                                      <span class="size-h3 color-subdue">#{{ $tagStr }}</span>
-                                                    </li>
+                                          <li>
+                                            <details>
+                                              <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
+                                                <div class="flex items-center gap-10">
+                                                  {{/* Folder icon */}}
+                                                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink: 0;">
+                                                    <path d="M1.75 3C1.33579 3 1 3.33579 1 3.75V12.25C1 12.6642 1.33579 13 1.75 13H14.25C14.6642 13 15 12.6642 15 12.25V5.75C15 5.33579 14.6642 5 14.25 5H7.82843C7.56321 5 7.30886 4.89464 7.12132 4.70711L6.37868 3.96447C6.19114 3.77693 5.93679 3.67157 5.67157 3.67157L1.75 3.67157C1.33579 3.67157 1 3.33579 1 2.92157V3.75C1 3.33579 1.33579 3 1.75 3Z" fill="currentColor" opacity="0.5"/>
+                                                  </svg>
+                                                  {{ if $childColor }}
+                                                    <span class="rounded" style="width: 8px; height: 8px; background-color: {{ $childColor }}; display: inline-block;"></span>
                                                   {{ end }}
-                                                </ul>
+                                                  <span class="size-h3">{{ $childTitle }}</span>
+                                                </div>
+                                                {{ if gt $childItemsCount 0 }}
+                                                  <div class="flex items-center gap-5 size-h3 color-subdue" style="margin-right: 0.5rem;">
+                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                                      <path d="M2 3.5C2 2.67157 2.67157 2 3.5 2H12.5C13.3284 2 14 2.67157 14 3.5V12.5C14 13.3284 13.3284 14 12.5 14H3.5C2.67157 14 2 13.3284 2 12.5V3.5Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                                      <path d="M5 7H11M5 9.5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                                    </svg>
+                                                    <span>{{ $childItemsCount }}</span>
+                                                  </div>
+                                                {{ end }}
+                                              </summary>
+
+                                              {{/* Sub-collection raindrops */}}
+                                              <div style="padding-left: 3rem; margin-top: 0.75rem;">
+                                                {{ if gt $childItemsCount 0 }}
+                                                  <div class="grid-raindrop-bookmarks">
+                                                    {{ range $allRaindrops }}
+                                                      {{ if eq (.Int "collection.$id") $childId }}
+                                                        <div style="min-width: 0;">
+                                                          <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
+                                                            {{/* Cover image or placeholder */}}
+                                                            {{ if .String "cover" }}
+                                                              <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
+                                                            {{ else }}
+                                                              <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
+                                                                <span class="size-h3 color-subdue">#</span>
+                                                              </div>
+                                                            {{ end }}
+
+                                                            {{/* Raindrop details */}}
+                                                            <div class="flex-column min-width-0 flex-1">
+                                                              <div class="size-h3 text-truncate margin-bottom-3">{{ .String "title" }}</div>
+
+                                                              <ul class="list-horizontal-text">
+                                                                <li>
+                                                                  <span class="size-h3 color-subdue">{{ .String "created" | parseTime "RFC3339" | formatTime "DateOnly" }}</span>
+                                                                </li>
+                                                                {{ $tags := .Array "tags" }}
+                                                                {{ range $tags }}
+                                                                  {{ $tagStr := printf "%v" . }}
+                                                                  {{ $tagStr = trimPrefix "{" $tagStr }}
+                                                                  {{ $tagStr = trimSuffix "}" $tagStr }}
+                                                                  <li>
+                                                                    <span class="size-h3 color-subdue">#{{ $tagStr }}</span>
+                                                                  </li>
+                                                                {{ end }}
+                                                              </ul>
+                                                            </div>
+                                                          </a>
+                                                        </div>
+                                                      {{ end }}
+                                                    {{ end }}
+                                                  </div>
+                                                {{ else }}
+                                                  <div class="color-subdue size-h3" style="padding: 0.5rem; font-style: italic;">
+                                                    No bookmarks in this sub-collection or not in recent 50
+                                                  </div>
+                                                {{ end }}
                                               </div>
-                                            </a>
-                                          </div>
+                                            </details>
+                                          </li>
                                         {{ end }}
                                       {{ end }}
-                                    </div>
-                                  {{ else }}
-                                    <div class="color-subdue size-h3" style="padding: 0.5rem; font-style: italic;">
-                                      No bookmarks in this sub-collection or not in recent 50
-                                    </div>
-                                  {{ end }}
-                                </div>
-                              </details>
-                            </li>
-                          {{ end }}
-                        {{ end }}
-                      </ul>
-                    </div>
-                  {{ end }}
+                                    </ul>
+                                  </div>
+                                {{ end }}
 
-                  {{/* Raindrops for this root collection */}}
-                  {{ $hasItems := false }}
-                  {{ range $allRaindrops }}
-                    {{ if eq (.Int "collection.$id") $collectionId }}
-                      {{ $hasItems = true }}
-                    {{ end }}
-                  {{ end }}
+                                {{/* Raindrops for this collection (not in sub-collections) */}}
+                                {{ if gt $itemsCount 0 }}
+                                  <div class="grid-raindrop-bookmarks">
+                                    {{ range $allRaindrops }}
+                                      {{ if eq (.Int "collection.$id") $collectionId }}
+                                        <div style="min-width: 0;">
+                                          <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
+                                            {{/* Cover image or placeholder */}}
+                                            {{ if .String "cover" }}
+                                              <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
+                                            {{ else }}
+                                              <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
+                                                <span class="size-h3 color-subdue">#</span>
+                                              </div>
+                                            {{ end }}
 
-                  {{ if $hasItems }}
-                    <div class="grid-raindrop-bookmarks">
-                      {{ range $allRaindrops }}
-                        {{ if eq (.Int "collection.$id") $collectionId }}
-                          <div style="min-width: 0;">
-                            <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
-                              {{/* Cover image or placeholder */}}
-                              {{ if .String "cover" }}
-                                <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
-                              {{ else }}
-                                <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
-                                  <span class="size-h3 color-subdue">#</span>
-                                </div>
-                              {{ end }}
+                                            {{/* Raindrop details */}}
+                                            <div class="flex-column min-width-0 flex-1">
+                                              <div class="size-h3 text-truncate margin-bottom-3">{{ .String "title" }}</div>
 
-                              {{/* Raindrop details */}}
-                              <div class="flex-column min-width-0 flex-1">
-                                <div class="size-h3 text-truncate margin-bottom-3">{{ .String "title" }}</div>
-
-                                <ul class="list-horizontal-text">
-                                  <li>
-                                    <span class="size-h3 color-subdue">{{ .String "created" | parseTime "RFC3339" | formatTime "DateOnly" }}</span>
-                                  </li>
-                                  {{ $tags := .Array "tags" }}
-                                  {{ range $tags }}
-                                    {{ $tagStr := printf "%v" . }}
-                                    {{ $tagStr = trimPrefix "{" $tagStr }}
-                                    {{ $tagStr = trimSuffix "}" $tagStr }}
-                                    <li>
-                                      <span class="size-h3 color-subdue">#{{ $tagStr }}</span>
-                                    </li>
-                                  {{ end }}
-                                </ul>
+                                              <ul class="list-horizontal-text">
+                                                <li>
+                                                  <span class="size-h3 color-subdue">{{ .String "created" | parseTime "RFC3339" | formatTime "DateOnly" }}</span>
+                                                </li>
+                                                {{ $tags := .Array "tags" }}
+                                                {{ range $tags }}
+                                                  {{ $tagStr := printf "%v" . }}
+                                                  {{ $tagStr = trimPrefix "{" $tagStr }}
+                                                  {{ $tagStr = trimSuffix "}" $tagStr }}
+                                                  <li>
+                                                    <span class="size-h3 color-subdue">#{{ $tagStr }}</span>
+                                                  </li>
+                                                {{ end }}
+                                              </ul>
+                                            </div>
+                                          </a>
+                                        </div>
+                                      {{ end }}
+                                    {{ end }}
+                                  </div>
+                                {{ else if eq $childrenCount 0 }}
+                                  <div class="color-subdue size-h3" style="padding: 0.5rem; font-style: italic;">
+                                    No bookmarks in this collection or not in recent 50
+                                  </div>
+                                {{ end }}
                               </div>
-                            </a>
-                          </div>
+                            </details>
+                          </li>
                         {{ end }}
                       {{ end }}
-                    </div>
-                  {{ else if not $hasChildren }}
-                    <div class="color-subdue size-h3" style="padding: 0.5rem; font-style: italic;">
-                      No bookmarks in this collection or not in recent 50
-                    </div>
-                  {{ end }}
+                    {{ end }}
+                  </ul>
                 </div>
               </details>
             </li>
+            {{ end }}
           {{ end }}
         </ul>
         </div>
@@ -333,7 +399,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
             <ul class="list list-gap-4" style="padding-left: 1.5rem;">
               <li>Environment variable <code>RAINDROP_TOKEN</code> is correctly set</li>
               <li>Token is valid and not expired
-                {{ if or (eq .Response.StatusCode 401) (eq $childrensReq.Response.StatusCode 401) (eq $raindropsReq.Response.StatusCode 401) }}
+                {{ if or (eq .Response.StatusCode 401) (eq $userReq.Response.StatusCode 401) (eq $childrensReq.Response.StatusCode 401) (eq $raindropsReq.Response.StatusCode 401) }}
                   <br><a href="https://app.raindrop.io/settings/integrations" target="_blank" rel="noreferrer" class="color-primary" style="margin-top: 0.5rem; display: inline-block;">→ Go to Raindrop settings page to get a new Token</a>
                 {{ end }}
               </li>
@@ -343,6 +409,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
               <strong>API Response Status:</strong>
               <ul class="list list-gap-4" style="padding-left: 1.5rem; margin-top: 0.5rem;">
                 <li>Collections: {{ .Response.StatusCode }} - {{ .Response.Status }}</li>
+                <li>User Data: {{ $userReq.Response.StatusCode }} - {{ $userReq.Response.Status }}</li>
                 <li>Child Collections: {{ $childrensReq.Response.StatusCode }} - {{ $childrensReq.Response.Status }}</li>
                 <li>Raindrops: {{ $raindropsReq.Response.StatusCode }} - {{ $raindropsReq.Response.Status }}</li>
               </ul>
@@ -356,7 +423,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your collections, chi
 
 ### Required
 
-- `RAINDROP_TOKEN`: Your Raindrop.io API token
+-   `RAINDROP_TOKEN`: Your Raindrop.io API token
 
 ### How to Get Your Token
 
@@ -372,6 +439,20 @@ export RAINDROP_TOKEN="your_token_here"
 Or add it to your Glance configuration environment file.
 
 ## Customization
+
+### Configuration Options
+
+The template includes several configuration variables at the top:
+
+```yaml
+{{ $autoOpenFirstGroup := true }}        # Auto-open all groups by default
+{{ $autoOpenFirstCollection := true }}   # Auto-open first collection in each group
+{{ $maxColumns := 2 }}                   # Display bookmarks in 2 columns (1 or 2)
+```
+
+- **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
+- **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
+- **`$maxColumns`**: Choose between `1` (single column) or `2` (two-column grid on wider screens)
 
 ### Cache Duration
 
@@ -392,11 +473,22 @@ title: 🔖 My Bookmarks
 title: 📚 Reading List
 ```
 
-## API Limitations
+## API Usage & Structure
 
-- The widget displays the **50 most recent bookmarks** due to Raindrop API limitations
-- Collections are displayed in their original order from Raindrop
-- Child collections are fully supported
+### Three-Level Hierarchy
+
+The widget uses multiple Raindrop API endpoints to build a complete hierarchy:
+
+1. **Groups** (Layer 1): Fetched from `/user` endpoint - Your custom organizational groups
+2. **Collections** (Layer 2): Fetched from `/collections` endpoint - Sorted by group membership
+3. **Sub-collections** (Layer 3): Fetched from `/collections/childrens` endpoint - Nested under collections
+4. **Bookmarks**: Fetched from `/raindrops/0` endpoint - The 50 most recent items
+
+### API Limitations
+
+-   The widget displays the **50 most recent bookmarks** due to Raindrop API's per-page limit
+-   Collections are ordered according to your Raindrop.io group settings
+-   Hidden groups are automatically filtered out
 
 ## Troubleshooting
 
@@ -406,20 +498,27 @@ If your token expires (HTTP 401), the widget will automatically display a link t
 
 ### No Bookmarks Showing
 
-- Ensure you have bookmarks in your Raindrop account
-- Check that the `RAINDROP_TOKEN` environment variable is correctly set
-- Verify your token has not expired
+-   Ensure you have bookmarks in your Raindrop account
+-   Check that the `RAINDROP_TOKEN` environment variable is correctly set
+-   Verify your token has not expired
 
-### Collections Not Expanding
+### Groups or Collections Not Expanding
 
-- Make sure you're clicking on the collection name or folder icon
-- Some collections may be empty or have no bookmarks in the recent 50 items
+-   Make sure you're clicking on the group/collection name or folder icon
+-   Some collections may be empty or have no bookmarks in the recent 50 items
+-   Check the `$autoOpenFirstGroup` and `$autoOpenFirstCollection` configuration options
+
+### Collections Not Showing in Groups
+
+-   Ensure your collections are assigned to groups in Raindrop.io
+-   Hidden groups won't be displayed (check group settings in Raindrop.io)
 
 ## Credits
 
-- Uses [Raindrop.io API](https://developer.raindrop.io)
-- Designed for [Glance](https://github.com/glanceapp/glance)
+-   Uses [Raindrop.io API](https://developer.raindrop.io)
+-   Designed for [Glance](https://github.com/glanceapp/glance)
 
 ## License
 
 This widget configuration is provided as-is for use with Glance.
+
