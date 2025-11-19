@@ -1,6 +1,6 @@
 - type: custom-api
   title: RAINDROP DASHBOARD
-  cache: 1d
+  cache: 5m
   url: https://api.raindrop.io/rest/v1/filters/0
   headers:
       Authorization: Bearer ${RAINDROP_TOKEN}
