@@ -3,69 +3,7 @@
       - size: small
         widgets:
             - $include: widget/widget-word-of-the-day.yml
-            - type: bookmarks
-              groups:
-                  - title: Quick Links
-                    links:
-                        - title: YouTube
-                          url: https://www.youtube.com/
-                          icon: di:youtube
-                        - title: Twitch
-                          url: https://www.twitch.tv/
-                          icon: di:twitch
-                        - title: Gmail
-                          url: https://mail.google.com/mail/u/0/
-                          icon: di:gmail
-                        - title: Google Maps
-                          url: https://www.google.com/maps
-                          icon: di:google-maps
-                        - title: Google Calendar
-                          url: https://calendar.google.com/calendar/u/0/r
-                          icon: di:google-calendar
-                        - title: Perplexity
-                          url: https://www.perplexity.ai/
-                          icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/perplexity-dark.svg
-                        - title: Claude
-                          url: https://claude.ai/
-                          icon: di:claude-ai
-                  - title: Entertainment
-                    color: 10 70 50
-                    links:
-                        - title: YouTube
-                          url: https://www.youtube.com/
-                          icon: di:youtube
-                        - title: Reddit
-                          url: https://www.reddit.com/
-                          icon: di:reddit
-                        - title: Hyread
-                          url: https://ebook.hyread.com.tw/
-                        - title: Geocache
-                          url: https://www.geocaching.com/play/search
-                  - title: Work
-                    color: 86 75 60
-                    links:
-                        - title: Github Repos
-                          url: https://github.com/kevinshu1995?tab=repositories
-                          icon: di:github-light
-                        - title: Cloudflare
-                          url: https://www.cloudflare.com/
-                          icon: di:cloudflare
-                        - title: Zeabur
-                          url: https://zeabur.com/projects
-                          icon: https://unpkg.com/@lobehub/icons-static-svg@latest/icons/zeabur.svg
-                        - title: Vercel
-                          url: https://vercel.com/login
-                  - title: Study
-                    color: 200 50 50
-                    links:
-                        - title: Spanish Dictionary
-                          url: https://www.spanishdict.com/
-                        - title: English News in Levels
-                          url: https://englishnewsinlevels.com/
-                        - title: Frontend Masters
-                          url: https://frontendmasters.com/
-                        - title: Vue Mastery
-                          url: https://www.vuemastery.com/courses/
+            - $include: widget/raindrop-bookmarks/raindrop-bookmarks.yml
       - size: full
         widgets:
             - type: search
@@ -142,7 +80,6 @@
                           title: freeCodeCamp
                         - url: https://css-tricks.com/feed/
                           title: css-tricks
-            - $include: widget/raindrop-bookmarks/raindrop-bookmarks.yml
       - size: small
         widgets:
             - type: clock
