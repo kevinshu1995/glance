@@ -2,48 +2,7 @@
   columns:
       - size: small
         widgets:
-            - type: custom-api
-              title: Word of the day
-              cache: 1h
-              url: https://api.wordnik.com/v4/words.json/wordOfTheDay?api_key=${WORDNIK_API_KEY}
-              template: |
-                  <div>
-                    <div class="size-h2 color-primary">{{ .JSON.String "word" }}</div>
-                    <div class="margin-bottom-5 size-h5" style="opacity:0.5">{{ .JSON.String "note" }}</div>
-
-                    <ul class="list list-gap-4 margin-bottom-15">
-                      {{ range .JSON.Array "definitions" }}
-                        <li>
-                          <ul>
-                            <li>{{ .String "partOfSpeech" }}</li>
-                            <li style="margin-left: 8px; padding-left: 8px;border-left: 1px solid var(--color-separator)">{{ .String "text" }}</li>
-                          </ul>
-                        </li>
-                      {{ end }}
-                    </ul>
-
-                    {{ with .JSON.Array "examples" }}
-                      {{ if gt (len .) 0 }}
-                        <div class="size-h5 color-highlight margin-bottom-7">Examples:</div>
-
-                        <ul class="list list-gap-10 collapsible-container" data-collapse-after="1">
-                          {{ range . }}
-                            <li>
-                              <p class="margin-bottom-5">{{ .String "text" }}</p>
-                              <a href='{{ .String "url" }}' target="_blank" class="visited-indicator text-truncate block size-h6" rel="noreferrer" title='{{ .String "title" }}'>Source</a>
-                            </li>
-                          {{ end }}
-                        </ul>
-                      {{ end }}
-                    {{ end }}
-
-                    <hr class="margin-bottom-10"/>
-                    
-                    <div class="flex justify-between items-center">
-                      <a href='https://www.google.com/search?q=definition+{{ .JSON.String "word" }}' class="visited-indicator flex items-center gap-7 size-h6"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l5.6 5.6q.275.275.275.7t-.275.7t-.7.275t-.7-.275l-5.6-5.6q-.75.6-1.725.95T9.5 16m0-2q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/></svg><span>Search on Internet</span></a>
-                      <p class="text-right size-h6">{{ .JSON.String "pdd" }}</p>
-                    </div>
-                  </div>
+            - $include: widget/widget-word-of-the-day.yml
             - type: bookmarks
               groups:
                   - title: Quick Links
@@ -200,3 +159,4 @@
               location: Taipei, Taiwan
               units: metric
               hour-format: 12h
+
