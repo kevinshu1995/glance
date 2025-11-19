@@ -142,6 +142,7 @@
                           title: freeCodeCamp
                         - url: https://css-tricks.com/feed/
                           title: css-tricks
+            - $include: widget/widget-raindrop.yml
       - size: small
         widgets:
             - type: clock
