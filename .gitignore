@@ -46,10 +46,7 @@ logs/
 # Git-related files
 .git/
 .gitignore
-# Environment files
-.env
 
-.env.*
 # Temporary files
 *.tmp
 *.swp
