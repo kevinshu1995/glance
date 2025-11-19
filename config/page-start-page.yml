@@ -80,7 +80,6 @@
                           title: freeCodeCamp
                         - url: https://css-tricks.com/feed/
                           title: css-tricks
-            - $include: widget/raindrop-bookmarks/raindrop-bookmarks.yml
       - size: small
         widgets:
             - type: clock
