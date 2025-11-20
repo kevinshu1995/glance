@@ -112,11 +112,12 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
             gap: 1.5rem;
             grid-template-columns: repeat(3, 1fr);
           }
-          @container (max-width: 900px) {
+          @container (max-width: 700px) {
             .grid-raindrop-bookmarks { grid-template-columns: repeat(2, 1fr); }
           }
-          @container (max-width: 640px) {
+          @container (max-width: 450px) {
             .grid-raindrop-bookmarks {
+              gap: 0.5rem;
               grid-template-columns: 1fr;
             }
 
@@ -290,12 +291,14 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                                         <div style="min-width: 0;">
                                                           <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
                                                             {{/* Cover image or placeholder */}}
-                                                            {{ if .String "cover" }}
-                                                              <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
-                                                            {{ else }}
-                                                              <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
-                                                                <span class="size-h3 color-subdue">#</span>
-                                                              </div>
+                                                            {{ if $showCover }}
+                                                              {{ if .String "cover" }}
+                                                                <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
+                                                              {{ else }}
+                                                                <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
+                                                                  <span class="size-h3 color-subdue">#</span>
+                                                                </div>
+                                                              {{ end }}
                                                             {{ end }}
 
                                                             {{/* Raindrop details */}}
@@ -344,12 +347,14 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                         <div style="min-width: 0;">
                                           <a href="{{ .String "link" }}" target="_blank" rel="noreferrer" class="flex gap-15 items-start color-primary-if-not-visited" style="text-decoration: none;">
                                             {{/* Cover image or placeholder */}}
-                                            {{ if .String "cover" }}
-                                              <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
-                                            {{ else }}
-                                              <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
-                                                <span class="size-h3 color-subdue">#</span>
-                                              </div>
+                                            {{ if $showCover }}
+                                              {{ if .String "cover" }}
+                                                <img src="{{ .String "cover" }}" alt="Cover" loading="lazy" class="thumbnail shrink-0 rounded" style="width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--color-separator);">
+                                              {{ else }}
+                                                <div class="shrink-0 flex items-center justify-center rounded" style="width: 48px; height: 48px; background: var(--color-widget-background); border: 1px solid var(--color-separator);">
+                                                  <span class="size-h3 color-subdue">#</span>
+                                                </div>
+                                              {{ end }}
                                             {{ end }}
 
                                             {{/* Raindrop details */}}
@@ -464,19 +469,19 @@ The template includes several configuration variables at the top:
 {{ $showCover := true }}                 # Show cover images for bookmarks
 ```
 
-- **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
-- **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
-- **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
+-   **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
+-   **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
+-   **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
 
 ### Responsive Grid Layout
 
 The widget automatically adjusts the number of columns based on the container width using container queries:
 
-- **> 900px**: 3 columns
-- **640px - 900px**: 2 columns
-- **< 640px**: 1 column (mobile) with optimized compact layout:
-  - Cover images reduced to 24px × 24px
-  - Date and tag text size reduced to `--font-size-h5`
+-   **> 900px**: 3 columns
+-   **640px - 900px**: 2 columns
+-   **< 640px**: 1 column (mobile) with optimized compact layout:
+    -   Cover images reduced to 24px × 24px
+    -   Date and tag text size reduced to `--font-size-h5`
 
 ### Cache Duration
 
