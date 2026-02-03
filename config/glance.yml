@@ -24,4 +24,5 @@ theme:
 pages:
     - $include: page-home.yml
     - $include: page-start-page.yml
+    - $include: page-services.yml
 

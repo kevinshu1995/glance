@@ -1,0 +1,10 @@
+# 在 pages 區塊中添加這個新 page
+- name: Services
+  columns:
+      - size: full
+        widgets:
+            - type: iframe
+              title: Services & Bookmarks
+              source: http://localhost:8080
+              height: 800
+
