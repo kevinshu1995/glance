@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
     glance:
         container_name: glance
@@ -12,9 +14,45 @@ services:
             # 選用：如需使用 docker containers widget，取消以下註解
             # - /var/run/docker.sock:/var/run/docker.sock:ro
         ports:
-            - 8080:8080
+            # 改為 8081（原本 8080 讓給 Homepage）
+            - "8081:8080"
         expose:
             - "8080"
         # 環境變數從 .env 檔案載入
         env_file: .env
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+        networks:
+            - dashboard
 
+    # 新增：Homepage 服務
+    homepage:
+        container_name: homepage
+        image: ghcr.io/gethomepage/homepage:latest
+        restart: unless-stopped
+        volumes:
+            - ./homepage/config:/app/config:ro
+            - ./homepage/data:/app/data
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            - "8080:3000"
+        expose:
+            - "3000"
+        env_file: .env
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+        networks:
+            - dashboard
+
+# 容器間通信網路
+networks:
+    dashboard:
+        driver: bridge
