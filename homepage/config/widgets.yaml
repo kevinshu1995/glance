@@ -1,0 +1,14 @@
+# Homepage Widgets Configuration
+
+- logo:
+      icon: mdi-home
+
+- search:
+      provider: google
+      target: _blank
+
+- datetime:
+      text_size: xl
+      format:
+          dateStyle: long
+          timeStyle: medium

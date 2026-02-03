@@ -1,0 +1,20 @@
+# Homepage Settings
+
+title: My Services
+subtitle: Personal Dashboard
+language: en
+theme: dark
+color: slate
+background:
+    image: https://images.unsplash.com/photo-1557821552-17105176677c?w=1200&h=1200
+    blur: sm
+    brightness: 0.4
+
+layout:
+    - name: Shortcuts
+      icon: fas fa-stream
+
+    - name: Services
+      icon: fas fa-cloud
+
+hideVersion: false

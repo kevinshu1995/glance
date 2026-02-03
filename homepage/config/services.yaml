@@ -1,0 +1,26 @@
+# Homepage Services Configuration
+
+- Self Hosted:
+      - Uptime Kuma:
+            icon: mdi-heart-pulse
+            href: http://localhost:3001
+            description: Uptime Monitoring
+            ping: http://localhost:3001
+
+      - AdGuard Home:
+            icon: mdi-shield-alert
+            href: http://localhost:80
+            description: DNS & Ad Blocker
+            ping: http://localhost:80
+
+      - Glance:
+            icon: mdi-monitor-dashboard
+            href: http://localhost:8081
+            description: Main Dashboard
+            ping: http://localhost:8081
+
+- External:
+      - GitHub:
+            icon: mdi-github
+            href: https://github.com
+            description: Repository Hosting

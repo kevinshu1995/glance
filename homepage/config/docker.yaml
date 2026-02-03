@@ -1,0 +1,20 @@
+# Homepage Docker Configuration
+
+docker:
+    - name: glance
+      icon: mdi-monitor-dashboard
+      description: Main Dashboard
+      host: localhost
+      port: 8081
+
+    - name: uptime-kuma
+      icon: mdi-heart-pulse
+      description: Uptime Monitor
+      host: localhost
+      port: 3001
+
+    - name: adguard
+      icon: mdi-shield-alert
+      description: AdGuard Home
+      host: localhost
+      port: 80
