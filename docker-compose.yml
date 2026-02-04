@@ -1,7 +1,7 @@
 services:
     glance:
         container_name: glance
-        image: glance-local:latest
+        image: glanceapp/glance:latest
         restart: unless-stopped
         working_dir: /app
         volumes:
