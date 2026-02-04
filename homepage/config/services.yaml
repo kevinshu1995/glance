@@ -65,6 +65,25 @@
                 version: 1 # optional, default is 1
                 key: "{{HOMEPAGE_VAR_SPEEDTEST_KEY}}" # required for version 2
                 bitratePrecision: 3 # optional, default is 0
+      - Tailscale:
+            widgets:
+                # https://login.tailscale.com/admin/settings/keys
+                - type: tailscale
+                  description: the-best-pie
+                  deviceid: nTPFjwAxV911CNTRL
+                  key: "{{HOMEPAGE_VAR_TAILSCALE_API_ACCESS_TOKEN}}"
+                - type: tailscale
+                  description: iphone-14-pro
+                  deviceid: nJ7n7CDCwv11CNTRL
+                  key: "{{HOMEPAGE_VAR_TAILSCALE_API_ACCESS_TOKEN}}"
+                - type: tailscale
+                  description: desktop
+                  deviceid: nNm68LHdbf11CNTRL
+                  key: "{{HOMEPAGE_VAR_TAILSCALE_API_ACCESS_TOKEN}}"
+                - type: tailscale
+                  description: macbook-pro
+                  deviceid: n5zY7utPvA21CNTRL
+                  key: "{{HOMEPAGE_VAR_TAILSCALE_API_ACCESS_TOKEN}}"
 
 - Network Devices:
       - Router:
