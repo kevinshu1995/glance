@@ -62,6 +62,3 @@ log "Running health checks..."
 bash $REPO_DIR/scripts/health-check.sh >> $LOG_FILE 2>&1
 
 log "========== Deployment Completed Successfully =========="
-SCRIPT
-
-chmod +x /home/pie/glance/scripts/deploy.sh
