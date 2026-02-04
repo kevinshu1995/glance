@@ -29,7 +29,7 @@ cd $REPO_DIR
 
 # 1. Git Pull
 log "Pulling from GitHub..."
-if git pull origin main >> $LOG_FILE 2>&1; then
+if git pull origin pi >> $LOG_FILE 2>&1; then
     log "✓ Git pull successful"
 else
     log "✗ Git pull failed"
