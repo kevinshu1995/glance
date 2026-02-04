@@ -1,26 +1,76 @@
 # Homepage Services Configuration
 
+- Calendar:
+      - "-":
+            widget:
+                type: calendar
+                firstDayInWeek: monday # optional - defaults to monday
+                view: monthly # optional - possible values monthly, agenda
+                maxEvents: 10 # optional - defaults to 10
+                showTime: true # optional - show time for event happening today - defaults to false
+                timezone: "{{HOMEPAGE_VAR_TIMEZONE}}"
+                integrations:
+                    - type: ical
+                      url: "{{HOMEPAGE_VAR_CALENDAR_NORMAL}}"
+                      name: Normal
+                      color: indigo
+                    - type: ical
+                      url: "{{HOMEPAGE_VAR_CALENDAR_JOBS}}"
+                      name: Jobs
+                      color: yellow
+      - Agenda:
+            widget:
+                type: calendar
+                view: agenda
+                maxEvents: 10 # optional - defaults to 10
+                showTime: true # optional - show time for event happening today - defaults to false
+                previousDays: 3 # optional - shows events since three days ago - defaults to 0
+                integrations: # same as in Monthly view example
+                    - type: ical
+                      url: "{{HOMEPAGE_VAR_CALENDAR_NORMAL}}"
+                      name: Normal
+                      color: indigo
+                    - type: ical
+                      url: "{{HOMEPAGE_VAR_CALENDAR_JOBS}}"
+                      name: Jobs
+                      color: yellow
+
 - Self Hosted:
       - Uptime Kuma:
             icon: mdi-heart-pulse
-            href: http://localhost:3001
             description: Uptime Monitoring
-            ping: http://localhost:3001
+            widget:
+                type: uptimekuma
+                url: "{{HOMEPAGE_VAR_UPTIME_KUMA_URL}}"
+                slug: all
 
       - AdGuard Home:
             icon: mdi-shield-alert
-            href: http://localhost:80
             description: DNS & Ad Blocker
-            ping: http://localhost:80
+            widget:
+                type: adguard
+                url: "{{HOMEPAGE_VAR_ADGUARD_HOME_URL}}"
+                username: "{{HOMEPAGE_VAR_ADGUARD_HOME_USERNAME}}"
+                password: "{{HOMEPAGE_VAR_ADGUARD_HOME_PASSWORD}}"
 
-      - Glance:
-            icon: mdi-monitor-dashboard
-            href: http://localhost:8081
-            description: Main Dashboard
-            ping: http://localhost:8081
+      - Speedtest Tracker:
+            icon: mdi-speedometer
+            description: Monitors the performance and uptime of your internet connection.
+            widget:
+                type: speedtest
+                url: "{{HOMEPAGE_VAR_SPEEDTEST_URL}}"
+                version: 1 # optional, default is 1
+                key: "{{HOMEPAGE_VAR_SPEEDTEST_KEY}}" # required for version 2
+                bitratePrecision: 3 # optional, default is 0
 
-- External:
-      - GitHub:
-            icon: mdi-github
-            href: https://github.com
-            description: Repository Hosting
+- Network Devices:
+      - Router:
+            icon: mdi-router-network
+            description: 小烏龜
+            href: "{{HOMEPAGE_VAR_ROUTER_IP}}"
+
+      - Aruba:
+            icon: mdi-router-network-wireless
+            description: WiFi Router
+            href: "{{HOMEPAGE_VAR_WIFI_ROUTER_IP}}"
+
