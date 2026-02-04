@@ -45,5 +45,6 @@ sudo visudo
 ```
 
 ```
-pi ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose
+pie ALL=(ALL) NOPASSWD: /usr/bin/docker
 ```
+
