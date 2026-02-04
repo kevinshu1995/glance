@@ -30,21 +30,3 @@ sudo systemctl start glance-webhook
 sudo systemctl status glance-webhook
 ```
 
-## 設定 Cron 自動更新
-
-```bash
-crontab -e
-```
-
-```bash
-0 2 * * * /home/pie/glance/scripts/deploy.sh
-```
-
-```bash
-sudo visudo
-```
-
-```
-pie ALL=(ALL) NOPASSWD: /usr/bin/docker
-```
-
