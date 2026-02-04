@@ -37,7 +37,7 @@ crontab -e
 ```
 
 ```bash
-0 2 * * * /home/pi/glance/scripts/deploy.sh
+0 2 * * * /home/pie/glance/scripts/deploy.sh
 ```
 
 ```bash
