@@ -5,7 +5,7 @@
 set -e
 
 REPO_DIR="/home/pie/glance"
-LOG_DIR="/var/log/glance"
+LOG_DIR="/home/pie/glance/logs"
 LOG_FILE="$LOG_DIR/deploy.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 

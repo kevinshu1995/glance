@@ -7,7 +7,7 @@ import logging
 app = Flask(__name__)
 
 # 日誌配置
-log_dir = '/var/log/glance'
+log_dir = '/home/pie/glance/logs'
 os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
@@ -20,8 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DEPLOY_SCRIPT = '/home/pi/glance/scripts/deploy.sh'
-REPO_DIR = '/home/pi/glance'
+DEPLOY_SCRIPT = '/home/pie/glance/scripts/deploy.sh'
+REPO_DIR = '/home/pie/glance'
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
