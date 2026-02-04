@@ -75,4 +75,5 @@ docker-compose.local.yml
 # CI/CD-related files
 .dockerignore
 
-.DS_Store*.deb
+.DS_Store
+*.deb
