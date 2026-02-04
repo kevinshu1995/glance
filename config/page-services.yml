@@ -5,5 +5,5 @@
         widgets:
             - type: html
               source: |
-                  <iframe src="http://localhost:8080" width="100%" height="800px" allowTransparency="true" frameborder="0"></iframe>
+                  <iframe src="${HOMEPAGE_URL}" width="100%" height="800px" allowTransparency="true" frameborder="0"></iframe>
 
