@@ -2,6 +2,8 @@ from flask import Flask, request
 import subprocess
 import os
 import json
+import hmac
+import hashlib
 from datetime import datetime
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -28,6 +30,21 @@ REPO_DIR = '/home/pie/glance'
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+GITHUB_WEBHOOK_SECRET = os.getenv('GITHUB_WEBHOOK_SECRET')
+DEPLOY_BRANCH = os.getenv('DEPLOY_BRANCH', 'main')
+
+
+def verify_github_signature(payload: bytes, signature: str) -> bool:
+    """驗證 GitHub webhook 的 HMAC-SHA256 簽名"""
+    if not GITHUB_WEBHOOK_SECRET:
+        logger.error("GITHUB_WEBHOOK_SECRET 環境變數未設定")
+        return False
+    expected = 'sha256=' + hmac.new(
+        GITHUB_WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
 
 
 def notify_telegram(message: str):
@@ -50,7 +67,20 @@ def notify_telegram(message: str):
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
-    """觸發部署"""
+    """觸發部署（由 GitHub webhook 觸發）"""
+    # 驗證 GitHub 簽名
+    signature = request.headers.get('X-Hub-Signature-256', '')
+    if not verify_github_signature(request.get_data(), signature):
+        logger.warning("Webhook 簽名驗證失敗")
+        return {'status': 'error', 'message': 'Invalid signature'}, 401
+
+    # 篩選 branch，只有推送到指定 branch 才觸發
+    payload = request.get_json(silent=True) or {}
+    ref = payload.get('ref', '')
+    if ref != f'refs/heads/{DEPLOY_BRANCH}':
+        logger.info(f"Skipped deploy: ref={ref}, target=refs/heads/{DEPLOY_BRANCH}")
+        return {'status': 'skipped', 'message': f'Not target branch ({DEPLOY_BRANCH})'}, 200
+
     try:
         logger.info("=" * 50)
         logger.info("Deploy triggered")
