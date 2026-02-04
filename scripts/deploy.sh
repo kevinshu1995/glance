@@ -38,7 +38,7 @@ fi
 
 # 2. 停止容器
 log "Stopping containers..."
-if docker-compose down >> $LOG_FILE 2>&1; then
+if docker compose down >> $LOG_FILE 2>&1; then
     log "✓ Containers stopped"
 else
     log "✗ Failed to stop containers"
@@ -46,7 +46,7 @@ fi
 
 # 3. 啟動容器
 log "Starting containers..."
-if docker-compose up -d >> $LOG_FILE 2>&1; then
+if docker compose up -d >> $LOG_FILE 2>&1; then
     log "✓ Containers started"
 else
     log "✗ Failed to start containers"
