@@ -31,7 +31,7 @@ REPO_DIR = '/home/pie/glance'
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GITHUB_WEBHOOK_SECRET = os.getenv('GITHUB_WEBHOOK_SECRET')
-DEPLOY_BRANCH = os.getenv('DEPLOY_BRANCH', 'main')
+DEPLOY_BRANCH = os.getenv('DEPLOY_BRANCH', 'pi')
 
 
 def verify_github_signature(payload: bytes, signature: str) -> bool:
@@ -84,7 +84,7 @@ def deploy():
     try:
         logger.info("=" * 50)
         logger.info("Deploy triggered")
-        notify_telegram(f'<b>[Deploy] 部署觸發</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+        notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
 
         # 執行部署腳本
         result = subprocess.run(
@@ -96,7 +96,7 @@ def deploy():
         
         if result.returncode == 0:
             logger.info("✓ Deployment successful")
-            notify_telegram(f'<b>[Deploy] 部署成功</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
             return {
                 'status': 'success',
                 'message': 'Deployment completed',
@@ -104,7 +104,7 @@ def deploy():
         else:
             logger.error(f"✗ Deployment failed: {result.stderr}")
             notify_telegram(
-                f'<b>[Deploy] 部署失敗</b>\n'
+                f'<b>[Pi Dashboard] [Deploy] 部署失敗</b>\n'
                 f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
                 f'<code>{result.stderr[-500:]}</code>'
             )
@@ -117,7 +117,7 @@ def deploy():
     except subprocess.TimeoutExpired:
         logger.error("Deployment timeout")
         notify_telegram(
-            f'<b>[Deploy] 部署超時</b>\n'
+            f'<b>[Pi Dashboard] [Deploy] 部署超時</b>\n'
             f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
             f'超過 5 分鐘未完成'
         )
