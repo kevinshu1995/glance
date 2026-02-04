@@ -4,7 +4,6 @@ title: My Services
 subtitle: Personal Dashboard
 language: en
 theme: dark
-color: slate
 
 layout:
     - name: Shortcuts

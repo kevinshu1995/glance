@@ -1,4 +1,7 @@
-html.dark {
-    --bg-color: 21 21 25;
+html.dark,
+html.dark #__next,
+html.dark body {
+    /* background-color: transparent; */
+    --bg-color: transparent;
 }
 
