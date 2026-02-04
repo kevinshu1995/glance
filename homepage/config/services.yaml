@@ -38,6 +38,7 @@
 - Self Hosted:
       - Uptime Kuma:
             icon: mdi-heart-pulse
+            href: "{{HOMEPAGE_VAR_UPTIME_KUMA_URL}}"
             description: Uptime Monitoring
             widget:
                 type: uptimekuma
@@ -46,6 +47,7 @@
 
       - AdGuard Home:
             icon: mdi-shield-alert
+            href: "{{HOMEPAGE_VAR_ADGUARD_HOME_URL}}"
             description: DNS & Ad Blocker
             widget:
                 type: adguard
