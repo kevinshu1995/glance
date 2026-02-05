@@ -61,4 +61,8 @@ sleep 10
 log "Running health checks..."
 bash $REPO_DIR/scripts/health-check.sh >> $LOG_FILE 2>&1
 
+# 6. 重啟 webhook service（延遲執行，避免殺死當前程序）
+log "Scheduling webhook service restart..."
+(sleep 3 && sudo systemctl restart glance-webhook.service) &
+
 log "========== Deployment Completed Successfully =========="
