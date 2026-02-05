@@ -1,6 +1,6 @@
 - type: custom-api
   title: Word of the day
-  cache: 1h
+  cache: 12h
   template: |
       {{
         $wordData := newRequest "https://api.wordnik.com/v4/words.json/wordOfTheDay"
@@ -50,3 +50,4 @@
       {{ else }}
         <p>Failed to fetch data: {{ $wordData.Response.Status }}</p>
       {{ end }}
+
