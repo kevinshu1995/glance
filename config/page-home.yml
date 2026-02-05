@@ -11,6 +11,31 @@
                   - mande
                   - wannasinging
                   - scspple7545
+            - type: markets
+              title: Global markets
+              markets:
+                  - symbol: SPY
+                    name: S&P 500
+                  - symbol: VT
+                    name: VT
+                  - symbol: QQQ
+                    name: QQQ
+                  - symbol: NVDA
+                    name: NVIDIA
+                  - symbol: AAPL
+                    name: Apple
+                  - symbol: NET
+                    name: Cloudflare
+
+            - type: markets
+              title: Taiwan markets
+              markets:
+                  - symbol: 0050.TW
+                    name: 0050
+                  - symbol: 006208.TW
+                    name: 006208
+                  - symbol: 0056.TW
+                    name: 0056
 
       - size: full
         widgets:
@@ -103,42 +128,13 @@
                     #   show-thumbnails: true
 
             - type: videos
-              style: horizontal-cards
+              style: grid-cards
               channels:
                   - UCXuqSBlHAE6Xw-yeJA0Tunw # Linus Tech Tips
                   - UCsBjURrPoezykLs9EqgamOA # Fireship
                   - UCyU5wkjgQYGRB0hIHMwm2Sg # Syntax
 
-      - size: small
-        widgets:
-            - type: weather
-              location: Taipei, Taiwan
-              units: metric
-              hour-format: 12h
-            - $include: widget/widget-word-of-the-day.yml
-            - type: markets
-              title: Global markets
-              markets:
-                  - symbol: SPY
-                    name: S&P 500
-                  - symbol: VT
-                    name: VT
-                  - symbol: QQQ
-                    name: QQQ
-                  - symbol: NVDA
-                    name: NVIDIA
-                  - symbol: AAPL
-                    name: Apple
-                  - symbol: NET
-                    name: Cloudflare
 
-            - type: markets
-              title: Taiwan markets
-              markets:
-                  - symbol: 0050.TW
-                    name: 0050
-                  - symbol: 006208.TW
-                    name: 006208
-                  - symbol: 0056.TW
-                    name: 0056
+      # - size: small
+      #   widgets:
 

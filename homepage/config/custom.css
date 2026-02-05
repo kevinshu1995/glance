@@ -5,3 +5,7 @@ html.dark body {
     --bg-color: transparent;
 }
 
+.service-card {
+    backdrop-filter: blur(5px);
+}
+

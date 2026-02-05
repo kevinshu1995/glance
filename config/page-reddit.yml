@@ -1,0 +1,46 @@
+- name: Reddit
+  columns:
+      - size: full
+        widgets:
+            - type: group
+              widgets:
+                  - type: reddit
+                    cache: 4h
+                    subreddit: Frontend
+                    show-thumbnails: true
+                    collapse-after: 10
+                    limit: 20
+                    show-flairs: true
+
+                  - type: reddit
+                    cache: 4h
+                    subreddit: apexlegends
+                    show-thumbnails: true
+                    collapse-after: 10
+                    limit: 20
+                    show-flairs: true
+
+                  - type: reddit
+                    cache: 4h
+                    subreddit: SonyAlpha
+                    show-thumbnails: true
+                    collapse-after: 10
+                    limit: 20
+                    show-flairs: true
+
+                  - type: reddit
+                    cache: 4h
+                    subreddit: Steam
+                    show-thumbnails: true
+                    collapse-after: 10
+                    limit: 20
+                    show-flairs: true
+
+                  - type: reddit
+                    cache: 4h
+                    subreddit: badminton
+                    show-thumbnails: true
+                    collapse-after: 10
+                    limit: 20
+                    show-flairs: true
+

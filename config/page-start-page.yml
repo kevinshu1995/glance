@@ -2,6 +2,10 @@
   columns:
       - size: small
         widgets:
+            - type: weather
+              location: Taipei, Taiwan
+              units: metric
+              hour-format: 12h
             - $include: widget/widget-word-of-the-day.yml
       - size: full
         widgets:
@@ -29,9 +33,4 @@
 
             - type: calendar
               first-day-of-week: monday
-
-            - type: weather
-              location: Taipei, Taiwan
-              units: metric
-              hour-format: 12h
 
