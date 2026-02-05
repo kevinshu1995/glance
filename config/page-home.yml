@@ -4,6 +4,13 @@
         widgets:
             - type: calendar
               first-day-of-week: monday
+            - type: twitch-channels
+              channels:
+                  - playapex
+                  - nicewigg
+                  - mande
+                  - wannasinging
+                  - scspple7545
 
       - size: full
         widgets:
