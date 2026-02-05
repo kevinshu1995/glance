@@ -1,7 +1,7 @@
 # Homepage Services Configuration
 
-- Calendar:
-      - "-":
+- 📅:
+      - Calendar:
             widget:
                 type: calendar
                 firstDayInWeek: monday # optional - defaults to monday
