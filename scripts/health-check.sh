@@ -29,6 +29,3 @@ check_service() {
 
 check_service "Glance" "$GLANCE_URL"
 check_service "Homepage" "$HOMEPAGE_URL"
-SCRIPT
-
-chmod +x scripts/health-check.sh

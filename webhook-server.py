@@ -47,6 +47,15 @@ def verify_github_signature(payload: bytes, signature: str) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
+def read_deploy_log(lines: int = 20) -> str:
+    """讀取 deploy.log 的最後幾行"""
+    try:
+        with open(f'{log_dir}/deploy.log', 'r') as f:
+            return ''.join(f.readlines()[-lines:])
+    except FileNotFoundError:
+        return '(deploy.log not found)'
+
+
 def notify_telegram(message: str):
     """推送 Telegram 通知，失敗時僅記錄日誌不中斷流程"""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
@@ -102,16 +111,21 @@ def deploy():
                 'message': 'Deployment completed',
             }, 200
         else:
-            logger.error(f"✗ Deployment failed: {result.stderr}")
+            output = result.stdout or result.stderr or '(no output)'
+            deploy_log = read_deploy_log(20)
+            logger.error(f"✗ Deployment failed (exit code {result.returncode}): {output}")
             notify_telegram(
                 f'<b>[Pi Dashboard] [Deploy] 部署失敗</b>\n'
-                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
-                f'<code>{result.stderr[-500:]}</code>'
+                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>\n'
+                f'<code>{deploy_log[-500:]}</code>'
             )
             return {
                 'status': 'error',
                 'message': 'Deployment failed',
-                'error': result.stderr
+                'returncode': result.returncode,
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'deploy_log': deploy_log
             }, 500
     
     except subprocess.TimeoutExpired:
