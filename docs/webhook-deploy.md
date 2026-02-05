@@ -82,7 +82,7 @@ tunnel: <TUNNEL-ID>
 credentials-file: /home/pie/.cloudflared/<TUNNEL-ID>.json
 
 ingress:
-  - hostname: p-glance.hsiu.soy
+  - hostname: dashboard.hsiu.soy
     service: http://localhost:8001
   - hostname: p-webhook.hsiu.soy
     service: http://localhost:5000
@@ -97,7 +97,7 @@ EOF
 每個 hostname 都要跑一次，否則從外網打進來會 404：
 
 ```bash
-cloudflared tunnel route dns glance p-glance.hsiu.soy
+cloudflared tunnel route dns glance dashboard.hsiu.soy
 cloudflared tunnel route dns glance p-webhook.hsiu.soy
 ```
 
@@ -188,11 +188,11 @@ sudo -u pie sudo systemctl restart glance-webhook.service --dry-run
 
 **回傳：**
 
-| Status Code | 含義 |
-|-------------|------|
-| `202` | 部署已排佇，看 Telegram 通知等結果 |
-| `200` | branch 不符，跳過 |
-| `401` | 簽名驗證失敗 |
+| Status Code | 含義                               |
+| ----------- | ---------------------------------- |
+| `202`       | 部署已排佇，看 Telegram 通知等結果 |
+| `200`       | branch 不符，跳過                  |
+| `401`       | 簽名驗證失敗                       |
 
 **部署結果**（透過 Telegram 通知，或看 `GET /logs`）：
 
@@ -249,4 +249,7 @@ Config 可能沒有同步。確認 `/etc/cloudflared/config.yml` 裡有該 hostn
 
 **Q: Deploy 後 webhook service 沒有重啟**
 確認 sudoers 已經設定（見手動處理事項 #10）。可以手動測試：`sudo -u pie sudo systemctl restart glance-webhook.service`
+
+**Q: 換網域時 `cloudflared tunnel route dns` 報「record already exists」**
+目標網域已經有 A / CNAME record。進 Cloudflare Dashboard → DNS → Records，找到該subdomain 的記錄刪掉後，再跑 `route dns`。舊網域的 CNAME record 也記得進去清理。
 
