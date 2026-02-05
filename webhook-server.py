@@ -1,5 +1,6 @@
 from flask import Flask, request
 import subprocess
+import threading
 import os
 import json
 import hmac
@@ -74,9 +75,49 @@ def notify_telegram(message: str):
     except (URLError, Exception) as e:
         logger.error(f"Telegram 通知失敗: {e}")
 
+def run_deploy():
+    """背景執行部署腳本，結果透過 Telegram 通知"""
+    try:
+        result = subprocess.run(
+            [DEPLOY_SCRIPT],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if result.returncode == 0:
+            logger.info("✓ Deployment successful")
+            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+        else:
+            output = result.stdout or result.stderr or '(no output)'
+            deploy_log = read_deploy_log(20)
+            logger.error(f"✗ Deployment failed (exit code {result.returncode}): {output}")
+            notify_telegram(
+                f'<b>[Pi Dashboard] [Deploy] 部署失敗</b>\n'
+                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>\n'
+                f'<code>{deploy_log[-500:]}</code>'
+            )
+
+    except subprocess.TimeoutExpired:
+        logger.error("Deployment timeout")
+        notify_telegram(
+            f'<b>[Pi Dashboard] [Deploy] 部署超時</b>\n'
+            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
+            f'超過 5 分鐘未完成'
+        )
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        notify_telegram(
+            f'<b>[Pi Dashboard] [Deploy] 部署錯誤</b>\n'
+            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
+            f'<code>{str(e)}</code>'
+        )
+
+
 @app.route('/deploy', methods=['POST'])
 def deploy():
-    """觸發部署（由 GitHub webhook 觸發）"""
+    """觸發部署（由 GitHub webhook 觸發），馬上回傳 202，實際執行在背景"""
     # 驗證 GitHub 簽名
     signature = request.headers.get('X-Hub-Signature-256', '')
     if not verify_github_signature(request.get_data(), signature):
@@ -90,62 +131,15 @@ def deploy():
         logger.info(f"Skipped deploy: ref={ref}, target=refs/heads/{DEPLOY_BRANCH}")
         return {'status': 'skipped', 'message': f'Not target branch ({DEPLOY_BRANCH})'}, 200
 
-    try:
-        logger.info("=" * 50)
-        logger.info("Deploy triggered")
-        notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+    logger.info("=" * 50)
+    logger.info("Deploy triggered")
+    notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
 
-        # 執行部署腳本
-        result = subprocess.run(
-            [DEPLOY_SCRIPT],
-            capture_output=True,
-            text=True,
-            timeout=300
-        )
-        
-        if result.returncode == 0:
-            logger.info("✓ Deployment successful")
-            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
-            return {
-                'status': 'success',
-                'message': 'Deployment completed',
-            }, 200
-        else:
-            output = result.stdout or result.stderr or '(no output)'
-            deploy_log = read_deploy_log(20)
-            logger.error(f"✗ Deployment failed (exit code {result.returncode}): {output}")
-            notify_telegram(
-                f'<b>[Pi Dashboard] [Deploy] 部署失敗</b>\n'
-                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>\n'
-                f'<code>{deploy_log[-500:]}</code>'
-            )
-            return {
-                'status': 'error',
-                'message': 'Deployment failed',
-                'returncode': result.returncode,
-                'stdout': result.stdout,
-                'stderr': result.stderr,
-                'deploy_log': deploy_log
-            }, 500
-    
-    except subprocess.TimeoutExpired:
-        logger.error("Deployment timeout")
-        notify_telegram(
-            f'<b>[Pi Dashboard] [Deploy] 部署超時</b>\n'
-            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
-            f'超過 5 分鐘未完成'
-        )
-        return {
-            'status': 'error',
-            'message': 'Deployment timeout (>5 minutes)'
-        }, 500
-    
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return {
-            'status': 'error',
-            'message': str(e)
-        }, 500
+    # 背景執行，馬上回傳給 GitHub
+    thread = threading.Thread(target=run_deploy, daemon=True)
+    thread.start()
+
+    return {'status': 'accepted', 'message': 'Deploy queued'}, 202
 
 @app.route('/health', methods=['GET'])
 def health():
