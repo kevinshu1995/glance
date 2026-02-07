@@ -2,6 +2,8 @@
 
 # 健康檢查腳本
 
+set -e
+
 echo "Checking service health..."
 
 GLANCE_URL="http://localhost:8081"
@@ -27,5 +29,16 @@ check_service() {
     return 1
 }
 
-check_service "Glance" "$GLANCE_URL"
-check_service "Homepage" "$HOMEPAGE_URL"
+if ! check_service "Glance" "$GLANCE_URL"; then
+    echo "ERROR: Glance health check failed"
+    exit 1
+fi
+
+if ! check_service "Homepage" "$HOMEPAGE_URL"; then
+    echo "ERROR: Homepage health check failed"
+    exit 1
+fi
+
+# 所有檢查通過
+echo "All health checks passed"
+exit 0

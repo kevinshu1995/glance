@@ -66,3 +66,6 @@ log "Scheduling webhook service restart..."
 (sleep 3 && sudo systemctl restart glance-webhook.service) &
 
 log "========== Deployment Completed Successfully =========="
+
+# 明確返回成功狀態
+exit 0
