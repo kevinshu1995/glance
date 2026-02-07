@@ -1,5 +1,5 @@
 :root {
-    --color-widget-background: hsla(var(--color-widget-background-hsl-values), 0.3);
+    --color-widget-background: hsla(var(--color-widget-background-hsl-values), 0.4);
 }
 
 body {
@@ -12,6 +12,6 @@ body {
 
 .widget-content:not(.widget-content-frameless),
 .widget-content-frame {
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
 }
 
