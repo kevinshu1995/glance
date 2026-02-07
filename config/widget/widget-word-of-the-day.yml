@@ -1,6 +1,6 @@
 - type: custom-api
   title: Word of the day
-  cache: 12h
+  cache: 6h
   template: |
       {{
         $wordData := newRequest "https://api.wordnik.com/v4/words.json/wordOfTheDay"

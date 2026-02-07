@@ -5,7 +5,7 @@
             - type: group
               widgets:
                   - type: reddit
-                    cache: 4h
+                    cache: 10m
                     subreddit: Frontend
                     show-thumbnails: true
                     collapse-after: 10
@@ -13,7 +13,7 @@
                     show-flairs: true
 
                   - type: reddit
-                    cache: 4h
+                    cache: 10m
                     subreddit: apexlegends
                     show-thumbnails: true
                     collapse-after: 10
@@ -21,7 +21,7 @@
                     show-flairs: true
 
                   - type: reddit
-                    cache: 4h
+                    cache: 10m
                     subreddit: SonyAlpha
                     show-thumbnails: true
                     collapse-after: 10
@@ -29,7 +29,7 @@
                     show-flairs: true
 
                   - type: reddit
-                    cache: 4h
+                    cache: 10m
                     subreddit: Steam
                     show-thumbnails: true
                     collapse-after: 10
@@ -37,7 +37,7 @@
                     show-flairs: true
 
                   - type: reddit
-                    cache: 4h
+                    cache: 10m
                     subreddit: badminton
                     show-thumbnails: true
                     collapse-after: 10

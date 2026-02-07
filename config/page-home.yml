@@ -43,13 +43,13 @@
               widgets:
                   - type: hacker-news
                     style: vertical-list
-                    cache: 4h
+                    cache: 10m
                     limit: 25
                     collapse-after: 10
                   - type: rss
                     title: News
                     style: vertical-list
-                    cache: 4h
+                    cache: 10m
                     limit: 25
                     collapse-after: 10
                     feeds:
@@ -66,7 +66,7 @@
                   - type: rss
                     title: English News
                     style: vertical-list
-                    cache: 4h
+                    cache: 10m
                     limit: 25
                     collapse-after: 10
                     feeds:
@@ -77,7 +77,7 @@
                   - type: rss
                     title: Games
                     style: vertical-list
-                    cache: 4h
+                    cache: 10m
                     limit: 25
                     collapse-after: 10
                     feeds:
@@ -90,7 +90,7 @@
                   - type: rss
                     title: Tech
                     style: vertical-list
-                    cache: 4h
+                    cache: 10m
                     limit: 25
                     collapse-after: 10
                     feeds:
@@ -102,30 +102,6 @@
                           title: freeCodeCamp
                         - url: https://css-tricks.com/feed/
                           title: css-tricks
-                    # - type: reddit
-                    #   cache: 1h
-                    #   subreddit: apexlegends
-                    #   show-thumbnails: true
-
-                    # - type: reddit
-                    #   cache: 1h
-                    #   subreddit: Frontend
-                    #   show-thumbnails: true
-
-                    # - type: reddit
-                    #   cache: 1h
-                    #   subreddit: SonyAlpha
-                    #   show-thumbnails: true
-
-                    # - type: reddit
-                    #   cache: 1h
-                    #   subreddit: Steam
-                    #   show-thumbnails: true
-
-                    # - type: reddit
-                    #   cache: 1h
-                    #   subreddit: badminton
-                    #   show-thumbnails: true
 
             - type: videos
               style: grid-cards

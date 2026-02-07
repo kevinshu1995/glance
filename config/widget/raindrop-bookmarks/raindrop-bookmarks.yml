@@ -4,7 +4,7 @@
   url: https://api.raindrop.io/rest/v1/collections
   headers:
       Authorization: Bearer ${RAINDROP_TOKEN}
-  cache: 1d
+  cache: 5m
   template: |
       {{/* Configuration options */}}
       {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
