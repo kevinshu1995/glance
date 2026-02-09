@@ -14,9 +14,9 @@ GitHub push (pi branch)
       → 背景執行 deploy.sh
         → git pull
         → docker compose down / up
-        → health-check.sh
-        → 重啟 glance-webhook.service（延遲 3 秒）
-      → 推送 Telegram 通知（觸發 / 成功 / 失敗）
+        → health-check.sh（失敗時中斷部署）
+        → 重啟 glance-webhook.service（延遲 15 秒，stdout/stderr 重定向避免管道阻塞）
+      → 推送 Telegram 通知（觸發 / 成功 / 失敗 / 超時）
 ```
 
 ## 環境變數
@@ -197,8 +197,9 @@ sudo -u pie sudo systemctl restart glance-webhook.service --dry-run
 **部署結果**（透過 Telegram 通知，或看 `GET /logs`）：
 
 - 成功：Telegram 推送成功訊息
-- 失敗：Telegram 推送失敗訊息 + exit code + deploy.log 內容
+- 失敗：Telegram 推送失敗訊息 + exit code + deploy.log 最後 500 字元
 - 超時（>5分鐘）：Telegram 推送超時訊息
+- 例外錯誤：Telegram 推送錯誤訊息 + 例外內容
 
 ### `GET /health`
 
@@ -222,12 +223,13 @@ sudo -u pie sudo systemctl restart glance-webhook.service --dry-run
 
 以下事件會推送通知：
 
-| 事件     | 訊息內容                           |
-| -------- | ---------------------------------- |
-| 部署觸發 | 時間戳                             |
-| 部署成功 | 時間戳                             |
-| 部署失敗 | 時間戳、exit code、deploy.log 內容 |
-| 部署超時 | 時間戳（超過 5 分鐘）              |
+| 事件     | 訊息內容                                    |
+| -------- | ------------------------------------------- |
+| 部署觸發 | 時間戳                                      |
+| 部署成功 | 時間戳                                      |
+| 部署失敗 | 時間戳、exit code、deploy.log 最後 500 字元 |
+| 部署超時 | 時間戳（超過 5 分鐘）                       |
+| 部署錯誤 | 時間戳、例外訊息                            |
 
 `TELEGRAM_TOKEN` 或 `TELEGRAM_CHAT_ID` 沒填的話，通知單純跳過，不會影響部署流程。
 
@@ -252,4 +254,21 @@ Config 可能沒有同步。確認 `/etc/cloudflared/config.yml` 裡有該 hostn
 
 **Q: 換網域時 `cloudflared tunnel route dns` 報「record already exists」**
 目標網域已經有 A / CNAME record。進 Cloudflare Dashboard → DNS → Records，找到該subdomain 的記錄刪掉後，再跑 `route dns`。舊網域的 CNAME record 也記得進去清理。
+
+**Q: 部署成功但 Telegram 通知收不到（deploy.log 顯示成功）**
+背景重啟指令的 stdout/stderr 如果沒有重定向，會導致 Python `subprocess.run(capture_output=True)` 持續等待管道關閉，阻塞 `run_deploy()` 函數，使得通知永遠不會發送。確認 `deploy.sh` 中的重啟指令有加上 `> /dev/null 2>&1 &`。
+
+---
+
+## 技術細節
+
+### deploy.sh 管道阻塞問題
+
+`deploy.sh` 末尾的 `(sleep 15 && sudo systemctl restart ...)` 如果沒有重定向 stdout/stderr，其子進程會繼承 `deploy.sh` 的 file descriptor。此時 `webhook-server.py` 的 `subprocess.run(capture_output=True)` 會等待所有 fd 關閉才返回，導致 `run_deploy()` 函數卡住，後續的 Telegram 通知永遠不會執行。
+
+解決方案：`(sleep 15 && sudo systemctl restart glance-webhook.service) > /dev/null 2>&1 &`
+
+### health-check.sh 錯誤處理
+
+`health-check.sh` 使用 `set -e` 確保任何指令失敗時立即中斷。每個服務檢查最多重試 5 次（每次間隔 5 秒），失敗時以 `exit 1` 中止，讓 `deploy.sh` 能夠偵測到健康檢查失敗並回報錯誤。
 
