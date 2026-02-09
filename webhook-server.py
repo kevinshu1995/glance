@@ -75,8 +75,19 @@ def notify_telegram(message: str):
     except (URLError, Exception) as e:
         logger.error(f"Telegram 通知失敗: {e}")
 
-def run_deploy():
+def format_commit_info(commit_info: dict) -> str:
+    """格式化 commit 資訊為 Telegram HTML"""
+    if not commit_info:
+        return ''
+    short_id = commit_info['id'][:7]
+    message = commit_info['message'].split('\n')[0][:80]
+    url = commit_info['url']
+    return f'\n<a href="{url}">{short_id}</a> {message}'
+
+
+def run_deploy(commit_info: dict = None):
     """背景執行部署腳本，結果透過 Telegram 通知"""
+    commit_line = format_commit_info(commit_info)
     try:
         result = subprocess.run(
             [DEPLOY_SCRIPT],
@@ -87,14 +98,19 @@ def run_deploy():
 
         if result.returncode == 0:
             logger.info("✓ Deployment successful")
-            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功 ✅</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+            notify_telegram(
+                f'<b>[Pi Dashboard] [Deploy] 部署成功 ✅</b>\n'
+                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>'
+                f'{commit_line}'
+            )
         else:
             output = result.stdout or result.stderr or '(no output)'
             deploy_log = read_deploy_log(20)
             logger.error(f"✗ Deployment failed (exit code {result.returncode}): {output}")
             notify_telegram(
                 f'<b>[Pi Dashboard] [Deploy] 部署失敗 ❗️</b>\n'
-                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>\n'
+                f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>'
+                f'{commit_line}\n'
                 f'<code>{deploy_log[-500:]}</code>'
             )
 
@@ -102,7 +118,8 @@ def run_deploy():
         logger.error("Deployment timeout")
         notify_telegram(
             f'<b>[Pi Dashboard] [Deploy] 部署超時 ⚠️</b>\n'
-            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
+            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>'
+            f'{commit_line}\n'
             f'超過 5 分鐘未完成'
         )
 
@@ -110,7 +127,8 @@ def run_deploy():
         logger.error(f"Unexpected error: {str(e)}")
         notify_telegram(
             f'<b>[Pi Dashboard] [Deploy] 部署錯誤 ⛔️</b>\n'
-            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
+            f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>'
+            f'{commit_line}\n'
             f'<code>{str(e)}</code>'
         )
 
@@ -131,12 +149,28 @@ def deploy():
         logger.info(f"Skipped deploy: ref={ref}, target=refs/heads/{DEPLOY_BRANCH}")
         return {'status': 'skipped', 'message': f'Not target branch ({DEPLOY_BRANCH})'}, 200
 
+    # 提取 commit 資訊
+    head_commit = payload.get('head_commit', {})
+    repo_url = payload.get('repository', {}).get('html_url', 'https://github.com/wen-hsiu-hsu/glance')
+    commit_info = None
+    if head_commit:
+        commit_id = head_commit.get('id', '')
+        commit_info = {
+            'id': commit_id,
+            'message': head_commit.get('message', ''),
+            'url': f'{repo_url}/commit/{commit_id}',
+        }
+
     logger.info("=" * 50)
-    logger.info("Deploy triggered")
-    notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發 ⏳</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+    logger.info(f"Deploy triggered (commit: {commit_info['id'][:7] if commit_info else 'unknown'})")
+    notify_telegram(
+        f'<b>[Pi Dashboard] [Deploy] 部署觸發 ⏳</b>\n'
+        f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>'
+        f'{format_commit_info(commit_info)}'
+    )
 
     # 背景執行，馬上回傳給 GitHub
-    thread = threading.Thread(target=run_deploy, daemon=True)
+    thread = threading.Thread(target=run_deploy, args=(commit_info,), daemon=True)
     thread.start()
 
     return {'status': 'accepted', 'message': 'Deploy queued'}, 202
