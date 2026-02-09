@@ -86,6 +86,15 @@
                   description: macbook-pro
                   deviceid: n5zY7utPvA21CNTRL
                   key: "{{HOMEPAGE_VAR_TAILSCALE_API_ACCESS_TOKEN}}"
+      - Ngnix Proxy Manager:
+            icon: mdi-arrow-decision-outline
+            href: "{{HOMEPAGE_VAR_NPM_URL}}"
+            description: ""
+            widget:
+                type: npm
+                url: "{{HOMEPAGE_VAR_NPM_URL}}"
+                username: "{{HOMEPAGE_VAR_NPM_USERNAME}}"
+                password: "{{HOMEPAGE_VAR_NPM_PASSWORD}}"
 
 - Network Devices:
       - Router:
