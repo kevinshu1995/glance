@@ -87,13 +87,13 @@ def run_deploy():
 
         if result.returncode == 0:
             logger.info("✓ Deployment successful")
-            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+            notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署成功 ✅</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
         else:
             output = result.stdout or result.stderr or '(no output)'
             deploy_log = read_deploy_log(20)
             logger.error(f"✗ Deployment failed (exit code {result.returncode}): {output}")
             notify_telegram(
-                f'<b>[Pi Dashboard] [Deploy] 部署失敗</b>\n'
+                f'<b>[Pi Dashboard] [Deploy] 部署失敗 ❗️</b>\n'
                 f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | exit code: {result.returncode}</code>\n'
                 f'<code>{deploy_log[-500:]}</code>'
             )
@@ -101,7 +101,7 @@ def run_deploy():
     except subprocess.TimeoutExpired:
         logger.error("Deployment timeout")
         notify_telegram(
-            f'<b>[Pi Dashboard] [Deploy] 部署超時</b>\n'
+            f'<b>[Pi Dashboard] [Deploy] 部署超時 ⚠️</b>\n'
             f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
             f'超過 5 分鐘未完成'
         )
@@ -109,7 +109,7 @@ def run_deploy():
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         notify_telegram(
-            f'<b>[Pi Dashboard] [Deploy] 部署錯誤</b>\n'
+            f'<b>[Pi Dashboard] [Deploy] 部署錯誤 ⛔️</b>\n'
             f'<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>\n'
             f'<code>{str(e)}</code>'
         )
@@ -133,7 +133,7 @@ def deploy():
 
     logger.info("=" * 50)
     logger.info("Deploy triggered")
-    notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
+    notify_telegram(f'<b>[Pi Dashboard] [Deploy] 部署觸發 ⏳</b>\n<code>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</code>')
 
     # 背景執行，馬上回傳給 GitHub
     thread = threading.Thread(target=run_deploy, daemon=True)
