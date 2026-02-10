@@ -63,8 +63,6 @@ bash $REPO_DIR/scripts/health-check.sh >> $LOG_FILE 2>&1
 
 # 6. 重啟 webhook service（延遲執行，避免殺死當前程序）
 # 必須重定向 stdout/stderr，否則 subprocess.run(capture_output=True) 會等待管道關閉
-log "Scheduling webhook service restart..."
-(sleep 15 && sudo systemctl restart glance-webhook.service) > /dev/null 2>&1 &
 
 log "========== Deployment Completed Successfully =========="
 
