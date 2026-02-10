@@ -1,6 +1,6 @@
 # Glance Dashboard x Homepage
 
-個人化的 Glance dashboard 配置，整合新聞、市場、天氣、影片訂閱等資訊流，並搭配 [Homepage](https://gethomepage.dev) 作為服務監控面板。支援 GitHub Webhook 自動部署至 Raspberry Pi，搭配 Telegram 通知。
+個人化的 Glance dashboard 配置，整合新聞、市場、天氣、影片訂閱等資訊流，並搭配 [Homepage](https://gethomepage.dev) 作為服務監控面板。透過 [pi-deployer](https://github.com/wen-hsiu-hsu/pi-deployer) 實現 GitHub Webhook 自動部署至 Raspberry Pi，搭配 Telegram 通知。
 
 ## 專案簡介
 
@@ -10,20 +10,22 @@
 - **Homepage 整合**：Services 分頁透過 iframe 嵌入 Homepage，監控自架服務狀態
 - **自定義主題**：Tucan 配色方案
 - **容器化部署**：Docker Compose 一鍵啟動 Glance + Homepage 雙服務
-- **自動部署**：GitHub Webhook + Cloudflare Tunnel + Telegram 通知
+- **自動部署**：透過 [pi-deployer](https://github.com/wen-hsiu-hsu/pi-deployer) 實現 GitHub Webhook + Cloudflare Tunnel + Telegram 通知
 - **自定義 Widgets**：Raindrop 書籤管理、每日英文單字
 
 ## 架構
 
 ```
 GitHub push (pi branch)
-  → Cloudflare Tunnel
-    → webhook-server.py (:5000)
-      → deploy.sh → docker compose down / up → health-check.sh
-      → Telegram 通知（觸發 / 成功 / 失敗）
+  → Cloudflare Tunnel (p-webhook.hsiu.soy)
+    → pi-deployer (:5000)
+      → 比對 projects.yml 找到 glance 專案
+      → HMAC-SHA256 簽名驗證
+      → docker compose down / up → health check
+      → Telegram 通知（觸發 / 成功 / 失敗 / 超時）
 ```
 
-詳細部署文件請參考：[Webhook Deploy 文件](docs/webhook-deploy.md)
+部署由獨立的 [pi-deployer](https://github.com/wen-hsiu-hsu/pi-deployer) 服務管理，所有 Pi 上的專案共用同一個 webhook endpoint。
 
 ## 自定義 Widgets
 
@@ -76,12 +78,7 @@ glance/
 │   ├── user.css                # 自定義 CSS 樣式
 │   └── wallpapers/             # 背景桌布
 ├── scripts/
-│   ├── deploy.sh               # 自動部署腳本
-│   ├── build-all.sh            # 全量建構腳本
-│   └── health-check.sh         # 健康檢查腳本
-├── docs/
-│   └── webhook-deploy.md       # Webhook 部署詳細文件
-├── webhook-server.py           # GitHub Webhook 接收伺服器
+│   └── build-all.sh            # 全量建構腳本
 ├── docker-compose.yml          # Docker Compose 配置（Glance + Homepage）
 ├── .env.example                # 環境變數範例
 └── CLAUDE.md                   # 開發指南
@@ -120,15 +117,11 @@ RAINDROP_TOKEN=your_raindrop_token_here
 
 # Homepage
 HOMEPAGE_URL=http://homepage:3000
-
-# 自動部署（選用）
-TELEGRAM_TOKEN=your_telegram_bot_token
-TELEGRAM_CHAT_ID=your_chat_id
-GITHUB_WEBHOOK_SECRET=your_webhook_secret
-DEPLOY_BRANCH=pi
 ```
 
 完整的環境變數列表請參考 `.env.example`。
+
+> 自動部署相關的環境變數（Telegram、webhook secret 等）已移至 [pi-deployer](https://github.com/wen-hsiu-hsu/pi-deployer) 的 `.env` 管理。
 
 **取得 API Keys：**
 
@@ -149,10 +142,10 @@ docker-compose up -d
 
 4. **存取 Dashboard**
 
-| 服務 | 網址 | 說明 |
-|------|------|------|
+| 服務     | 網址                    | 說明         |
+| -------- | ----------------------- | ------------ |
 | Homepage | `http://localhost:8080` | 服務監控面板 |
-| Glance | `http://localhost:8081` | 主儀表板 |
+| Glance   | `http://localhost:8081` | 主儀表板     |
 
 ## 頁面說明
 
@@ -191,14 +184,14 @@ Homepage 配置位於 `homepage/config/`，詳細說明請參考 [Homepage READM
 
 ## 自動部署
 
-支援透過 GitHub Webhook 自動部署至 Raspberry Pi：
+透過 [pi-deployer](https://github.com/wen-hsiu-hsu/pi-deployer) 自動部署至 Raspberry Pi：
 
 1. Push 到 `pi` branch 觸發 GitHub Webhook
-2. Cloudflare Tunnel 將請求轉發至 Pi 上的 `webhook-server.py`
-3. 驗證 HMAC-SHA256 簽名後執行 `deploy.sh`
-4. 部署結果透過 Telegram Bot 通知
+2. Cloudflare Tunnel 將請求轉發至 Pi 上的 pi-deployer 服務
+3. pi-deployer 驗證 HMAC-SHA256 簽名，執行 `docker compose down / up`
+4. 健康檢查通過後透過 Telegram Bot 通知部署結果
 
-詳細設定步驟請參考：[Webhook Deploy 文件](docs/webhook-deploy.md)
+pi-deployer 是獨立的通用部署服務，管理所有 Pi 上的 Git 專案。詳細設定請參考 [pi-deployer README](https://github.com/wen-hsiu-hsu/pi-deployer)。
 
 ## 主題配色
 
@@ -279,3 +272,4 @@ Glance 本身的授權請參考：[Glance Repository](https://github.com/glancea
 - [Community Widgets](https://github.com/glanceapp/community-widgets)
 - [Raindrop.io API](https://developer.raindrop.io)
 - [Wordnik API](https://developer.wordnik.com/)
+
