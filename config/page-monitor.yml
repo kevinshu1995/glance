@@ -1,0 +1,9 @@
+# 在 pages 區塊中添加這個新 page
+- name: Monitor
+  columns:
+      - size: full
+        widgets:
+            - type: html
+              source: |
+                  <iframe src="${MONITOR_DASHBOARD_URL}" width="100%" height="800px" allowTransparency="true" frameborder="0"></iframe>
+

@@ -27,4 +27,5 @@ pages:
     - $include: page-start-page.yml
     - $include: page-reddit.yml
     - $include: page-services.yml
+    - $include: page-monitor.yml
 
