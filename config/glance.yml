@@ -6,8 +6,7 @@ theme:
     # will not be reflected until the browser cache is cleared (Ctrl+F5)
     custom-css-file: /assets/user.css
     disable-picker: true
-    # Tucan
-    background-color: 10 10 10
+    background-color: 30 50 20
     primary-color: 24 97 58
     negative-color: 56.8 58.2 1
     # presets:
