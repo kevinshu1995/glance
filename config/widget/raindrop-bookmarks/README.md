@@ -28,10 +28,8 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
   cache: 1d
   template: |
       {{/* Configuration options */}}
-      {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
-      {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
-      {{ $autoOpenAll := false }}  {{/* Open all groups and collections */}}
-      {{ $autoOpenPattern := "" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
+      {{ $autoOpen := "first" }}  {{/* "none"=collapse all, "all"=expand all, "first"=expand first level, or regex pattern */}}
+      {{ $autoOpenChildren := false }}  {{/* In regex mode, also expand all children of matched nodes */}}
       {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
@@ -153,8 +151,43 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
             {{ $groupCollectionCount := len $groupCollectionIds }}
 
             <li>
-              {{/* Group level (Layer 1) */}}
-              <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $groupTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll $autoOpenFirstGroup }}open{{ end }}{{ end }}>
+              {{/* Group level (Layer 1) - compute $groupShouldOpen */}}
+              {{ $groupShouldOpen := false }}
+              {{ if eq $autoOpen "all" }}
+                {{ $groupShouldOpen = true }}
+              {{ else if eq $autoOpen "first" }}
+                {{ $groupShouldOpen = true }}
+              {{ else if eq $autoOpen "none" }}
+              {{ else }}
+                {{/* regex mode */}}
+                {{ if findMatch $autoOpen $groupTitle }}
+                  {{ $groupShouldOpen = true }}
+                {{ else }}
+                  {{/* cascade up: check if any collection in this group matches */}}
+                  {{ range $collId := $groupCollectionIds }}
+                    {{ $cid := printf "%v" $collId }}
+                    {{ $cid = trimPrefix "{" $cid }}
+                    {{ $cid = trimSuffix "}" $cid }}
+                    {{ range $allCollections }}
+                      {{ if eq (printf "%v" (.Int "_id")) $cid }}
+                        {{ if findMatch $autoOpen (.String "title") }}
+                          {{ $groupShouldOpen = true }}
+                        {{ end }}
+                        {{/* also check sub-collections */}}
+                        {{ $pcid := .Int "_id" }}
+                        {{ range $childCollections }}
+                          {{ if eq (.Int "parent.$id") $pcid }}
+                            {{ if findMatch $autoOpen (.String "title") }}
+                              {{ $groupShouldOpen = true }}
+                            {{ end }}
+                          {{ end }}
+                        {{ end }}
+                      {{ end }}
+                    {{ end }}
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+              <details {{ if $groupShouldOpen }}open{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                   <div class="flex items-center gap-10 min-width-0 flex-1">
                     {{/* Group icon */}}
@@ -205,8 +238,36 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                           {{ end }}
 
                           <li>
-                            {{/* Collection level (Layer 2) */}}
-                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $collectionTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll (and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0)) }}open{{ end }}{{ end }}>
+                            {{/* Collection level (Layer 2) - compute $collShouldOpen */}}
+                            {{ $groupMatched := false }}
+                            {{ if and (ne $autoOpen "none") (ne $autoOpen "all") (ne $autoOpen "first") }}
+                              {{ if findMatch $autoOpen $groupTitle }}{{ $groupMatched = true }}{{ end }}
+                            {{ end }}
+
+                            {{ $collShouldOpen := false }}
+                            {{ if eq $autoOpen "all" }}
+                              {{ $collShouldOpen = true }}
+                            {{ else if eq $autoOpen "first" }}
+                              {{ if and (eq $groupIndex 0) (eq $collIndex 0) }}{{ $collShouldOpen = true }}{{ end }}
+                            {{ else if eq $autoOpen "none" }}
+                            {{ else }}
+                              {{/* regex mode */}}
+                              {{ if findMatch $autoOpen $collectionTitle }}
+                                {{ $collShouldOpen = true }}
+                              {{ else if and $groupMatched $autoOpenChildren }}
+                                {{ $collShouldOpen = true }}
+                              {{ else }}
+                                {{/* cascade up: check if any sub-collection matches */}}
+                                {{ range $childCollections }}
+                                  {{ if eq (.Int "parent.$id") $collectionId }}
+                                    {{ if findMatch $autoOpen (.String "title") }}
+                                      {{ $collShouldOpen = true }}
+                                    {{ end }}
+                                  {{ end }}
+                                {{ end }}
+                              {{ end }}
+                            {{ end }}
+                            <details {{ if $collShouldOpen }}open{{ end }}>
                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                   {{/* Folder icon */}}
@@ -261,7 +322,26 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                           {{ end }}
 
                                           <li>
-                                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $childTitle }}open{{ end }}{{ else }}{{ if $autoOpenAll }}open{{ end }}{{ end }}>
+                                            {{/* Sub-collection level (Layer 3) - compute $subShouldOpen */}}
+                                            {{ $collMatched := false }}
+                                            {{ if and (ne $autoOpen "none") (ne $autoOpen "all") (ne $autoOpen "first") }}
+                                              {{ if findMatch $autoOpen $collectionTitle }}{{ $collMatched = true }}{{ end }}
+                                            {{ end }}
+
+                                            {{ $subShouldOpen := false }}
+                                            {{ if eq $autoOpen "all" }}
+                                              {{ $subShouldOpen = true }}
+                                            {{ else if eq $autoOpen "none" }}
+                                            {{ else if eq $autoOpen "first" }}
+                                            {{ else }}
+                                              {{/* regex mode */}}
+                                              {{ if findMatch $autoOpen $childTitle }}
+                                                {{ $subShouldOpen = true }}
+                                              {{ else if and (or $groupMatched $collMatched) $autoOpenChildren }}
+                                                {{ $subShouldOpen = true }}
+                                              {{ end }}
+                                            {{ end }}
+                                            <details {{ if $subShouldOpen }}open{{ end }}>
                                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
                                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                                   {{/* Folder icon */}}
@@ -466,17 +546,47 @@ Or add it to your Glance configuration environment file.
 The template includes several configuration variables at the top:
 
 ```yaml
-{{ $autoOpenFirstGroup := true }}        # Auto-open all groups by default
-{{ $autoOpenFirstCollection := true }}   # Auto-open first collection in each group
-{{ $autoOpenAll := false }}              # Open all groups, collections, and sub-collections
-{{ $autoOpenPattern := "" }}             # Regex pattern to auto-open matching names (highest priority)
-{{ $showCover := true }}                 # Show cover images for bookmarks
+{{ $autoOpen := "first" }}           # "none" | "all" | "first" | regex pattern
+{{ $autoOpenChildren := false }}      # regex mode: expand matched node's children too
+{{ $showCover := true }}              # Show cover images for bookmarks
 ```
 
-- **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
-- **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
-- **`$autoOpenAll`**: Set to `true` to expand all groups, collections, and sub-collections by default. When enabled, overrides `$autoOpenFirstGroup` and `$autoOpenFirstCollection`
-- **`$autoOpenPattern`**: Regex pattern to auto-open groups/collections/sub-collections whose name matches. **Highest priority** — when set (non-empty), overrides all other auto-open options. Example: `"^(收藏夾|Entertainment)$"` to open only those named exactly "收藏夾" or "Entertainment"
+#### `$autoOpen`
+
+| Value     | Behavior                                                                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `"none"`  | All groups/collections collapsed                                                                                                                                                     |
+| `"all"`   | All groups/collections expanded                                                                                                                                                      |
+| `"first"` | All groups expanded + first collection in first group expanded (backward compatible default)                                                                                         |
+| regex     | Nodes whose name matches the pattern are expanded. **Ancestor nodes are automatically expanded** (cascade up). Example: `"^(Quick Link)$"` expands "Quick Link" and its parent group |
+
+#### `$autoOpenChildren`
+
+Only effective in regex mode:
+
+- `false`: Only expand matched nodes (and their ancestors)
+- `true`: Expand matched nodes + all their descendant children
+
+#### Examples
+
+```yaml
+# Example 1: Only expand the collection named "Quick Link" (parent group auto-expands)
+{{ $autoOpen := "^(Quick Link)$" }}
+{{ $autoOpenChildren := false }}
+
+# Example 2: Expand "Quick Link" and all its sub-collections
+{{ $autoOpen := "^(Quick Link)$" }}
+{{ $autoOpenChildren := true }}
+
+# Example 3: Expand a group and all collections + sub-collections under it
+{{ $autoOpen := "^(Bookmarks)$" }}
+{{ $autoOpenChildren := true }}
+
+# Example 4: Multiple targets
+{{ $autoOpen := "^(Bookmarks|Entertainment|Tech)$" }}
+{{ $autoOpenChildren := true }}
+```
+
 - **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
 
 ### Responsive Grid Layout
@@ -541,7 +651,7 @@ If your token expires (HTTP 401), the widget will automatically display a link t
 
 - Make sure you're clicking on the group/collection name or folder icon
 - Some collections may be empty or have no bookmarks in the recent 50 items
-- Check the `$autoOpenFirstGroup` and `$autoOpenFirstCollection` configuration options
+- Check the `$autoOpen` configuration option
 
 ### Collections Not Showing in Groups
 

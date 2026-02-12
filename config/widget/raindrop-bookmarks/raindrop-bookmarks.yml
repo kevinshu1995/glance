@@ -7,10 +7,8 @@
   cache: 5m
   template: |
       {{/* Configuration options */}}
-      {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
-      {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
-      {{ $autoOpenAll := false }}  {{/* Open all groups and collections */}}
-      {{ $autoOpenPattern := "^(Bookmarks)$" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
+      {{ $autoOpen := "^(Bookmarks)$" }}  {{/* "none"=collapse all, "all"=expand all, "first"=expand first level, or regex pattern */}}
+      {{ $autoOpenChildren := true }}  {{/* In regex mode, also expand all children of matched nodes */}}
       {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
@@ -132,8 +130,43 @@
             {{ $groupCollectionCount := len $groupCollectionIds }}
 
             <li>
-              {{/* Group level (Layer 1) */}}
-              <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $groupTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll $autoOpenFirstGroup }}open{{ end }}{{ end }}>
+              {{/* Group level (Layer 1) - compute $groupShouldOpen */}}
+              {{ $groupShouldOpen := false }}
+              {{ if eq $autoOpen "all" }}
+                {{ $groupShouldOpen = true }}
+              {{ else if eq $autoOpen "first" }}
+                {{ $groupShouldOpen = true }}
+              {{ else if eq $autoOpen "none" }}
+              {{ else }}
+                {{/* regex mode */}}
+                {{ if findMatch $autoOpen $groupTitle }}
+                  {{ $groupShouldOpen = true }}
+                {{ else }}
+                  {{/* cascade up: check if any collection in this group matches */}}
+                  {{ range $collId := $groupCollectionIds }}
+                    {{ $cid := printf "%v" $collId }}
+                    {{ $cid = trimPrefix "{" $cid }}
+                    {{ $cid = trimSuffix "}" $cid }}
+                    {{ range $allCollections }}
+                      {{ if eq (printf "%v" (.Int "_id")) $cid }}
+                        {{ if findMatch $autoOpen (.String "title") }}
+                          {{ $groupShouldOpen = true }}
+                        {{ end }}
+                        {{/* also check sub-collections */}}
+                        {{ $pcid := .Int "_id" }}
+                        {{ range $childCollections }}
+                          {{ if eq (.Int "parent.$id") $pcid }}
+                            {{ if findMatch $autoOpen (.String "title") }}
+                              {{ $groupShouldOpen = true }}
+                            {{ end }}
+                          {{ end }}
+                        {{ end }}
+                      {{ end }}
+                    {{ end }}
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+              <details {{ if $groupShouldOpen }}open{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                   <div class="flex items-center gap-10 min-width-0 flex-1">
                     {{/* Group icon */}}
@@ -184,8 +217,36 @@
                           {{ end }}
 
                           <li>
-                            {{/* Collection level (Layer 2) */}}
-                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $collectionTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll (and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0)) }}open{{ end }}{{ end }}>
+                            {{/* Collection level (Layer 2) - compute $collShouldOpen */}}
+                            {{ $groupMatched := false }}
+                            {{ if and (ne $autoOpen "none") (ne $autoOpen "all") (ne $autoOpen "first") }}
+                              {{ if findMatch $autoOpen $groupTitle }}{{ $groupMatched = true }}{{ end }}
+                            {{ end }}
+
+                            {{ $collShouldOpen := false }}
+                            {{ if eq $autoOpen "all" }}
+                              {{ $collShouldOpen = true }}
+                            {{ else if eq $autoOpen "first" }}
+                              {{ if and (eq $groupIndex 0) (eq $collIndex 0) }}{{ $collShouldOpen = true }}{{ end }}
+                            {{ else if eq $autoOpen "none" }}
+                            {{ else }}
+                              {{/* regex mode */}}
+                              {{ if findMatch $autoOpen $collectionTitle }}
+                                {{ $collShouldOpen = true }}
+                              {{ else if and $groupMatched $autoOpenChildren }}
+                                {{ $collShouldOpen = true }}
+                              {{ else }}
+                                {{/* cascade up: check if any sub-collection matches */}}
+                                {{ range $childCollections }}
+                                  {{ if eq (.Int "parent.$id") $collectionId }}
+                                    {{ if findMatch $autoOpen (.String "title") }}
+                                      {{ $collShouldOpen = true }}
+                                    {{ end }}
+                                  {{ end }}
+                                {{ end }}
+                              {{ end }}
+                            {{ end }}
+                            <details {{ if $collShouldOpen }}open{{ end }}>
                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                   {{/* Folder icon */}}
@@ -240,7 +301,26 @@
                                           {{ end }}
 
                                           <li>
-                                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $childTitle }}open{{ end }}{{ else }}{{ if $autoOpenAll }}open{{ end }}{{ end }}>
+                                            {{/* Sub-collection level (Layer 3) - compute $subShouldOpen */}}
+                                            {{ $collMatched := false }}
+                                            {{ if and (ne $autoOpen "none") (ne $autoOpen "all") (ne $autoOpen "first") }}
+                                              {{ if findMatch $autoOpen $collectionTitle }}{{ $collMatched = true }}{{ end }}
+                                            {{ end }}
+
+                                            {{ $subShouldOpen := false }}
+                                            {{ if eq $autoOpen "all" }}
+                                              {{ $subShouldOpen = true }}
+                                            {{ else if eq $autoOpen "none" }}
+                                            {{ else if eq $autoOpen "first" }}
+                                            {{ else }}
+                                              {{/* regex mode */}}
+                                              {{ if findMatch $autoOpen $childTitle }}
+                                                {{ $subShouldOpen = true }}
+                                              {{ else if and (or $groupMatched $collMatched) $autoOpenChildren }}
+                                                {{ $subShouldOpen = true }}
+                                              {{ end }}
+                                            {{ end }}
+                                            <details {{ if $subShouldOpen }}open{{ end }}>
                                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
                                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                                   {{/* Folder icon */}}
