@@ -4,11 +4,13 @@
   url: https://api.raindrop.io/rest/v1/collections
   headers:
       Authorization: Bearer ${RAINDROP_TOKEN}
-  cache: 5m
+  cache: 1h
   template: |
       {{/* Configuration options */}}
       {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
       {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
+      {{ $autoOpenAll := false }}  {{/* Open all groups and collections */}}
+      {{ $autoOpenPattern := "^(收藏夾)$" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
       {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
@@ -131,7 +133,7 @@
 
             <li>
               {{/* Group level (Layer 1) */}}
-              <details {{ if $autoOpenFirstGroup }}open{{ end }}>
+              <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $groupTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll $autoOpenFirstGroup }}open{{ end }}{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                   <div class="flex items-center gap-10 min-width-0 flex-1">
                     {{/* Group icon */}}
@@ -183,7 +185,7 @@
 
                           <li>
                             {{/* Collection level (Layer 2) */}}
-                            <details {{ if and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0) }}open{{ end }}>
+                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $collectionTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll (and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0)) }}open{{ end }}{{ end }}>
                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                   {{/* Folder icon */}}
@@ -238,7 +240,7 @@
                                           {{ end }}
 
                                           <li>
-                                            <details>
+                                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $childTitle }}open{{ end }}{{ else }}{{ if $autoOpenAll }}open{{ end }}{{ end }}>
                                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
                                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                                   {{/* Folder icon */}}

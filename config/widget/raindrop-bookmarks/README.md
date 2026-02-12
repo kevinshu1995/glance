@@ -6,15 +6,15 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
 
 ## Features
 
--   📁 **Three-Level Hierarchy**: Display groups, collections, and sub-collections with proper ordering
--   🗂️ **Custom Sorting**: Respects your Raindrop.io group organization and collection order
--   🔖 **Bookmark Details**: Shows cover images, titles, tags, and creation dates
--   🎨 **Collection Colors**: Visual color indicators for each collection
--   🔄 **Auto-refresh**: 24-hour cache with manual refresh support
--   ⚠️ **Smart Limitations**: Displays the 50 most recent bookmarks (API limitation)
--   ✨ **Auto-expand Options**: Configure which groups and collections open by default
--   🔗 **Quick Access**: Click widget title to open Raindrop.io
--   🔐 **Token Error Handling**: Automatic redirect to settings page when token expires
+- 📁 **Three-Level Hierarchy**: Display groups, collections, and sub-collections with proper ordering
+- 🗂️ **Custom Sorting**: Respects your Raindrop.io group organization and collection order
+- 🔖 **Bookmark Details**: Shows cover images, titles, tags, and creation dates
+- 🎨 **Collection Colors**: Visual color indicators for each collection
+- 🔄 **Auto-refresh**: 24-hour cache with manual refresh support
+- ⚠️ **Smart Limitations**: Displays the 50 most recent bookmarks (API limitation)
+- ✨ **Auto-expand Options**: Configure which groups and collections open by default
+- 🔗 **Quick Access**: Click widget title to open Raindrop.io
+- 🔐 **Token Error Handling**: Automatic redirect to settings page when token expires
 
 ## Configuration
 
@@ -30,6 +30,8 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
       {{/* Configuration options */}}
       {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
       {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
+      {{ $autoOpenAll := false }}  {{/* Open all groups and collections */}}
+      {{ $autoOpenPattern := "" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
       {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
@@ -152,7 +154,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
 
             <li>
               {{/* Group level (Layer 1) */}}
-              <details {{ if $autoOpenFirstGroup }}open{{ end }}>
+              <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $groupTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll $autoOpenFirstGroup }}open{{ end }}{{ end }}>
                 <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                   <div class="flex items-center gap-10 min-width-0 flex-1">
                     {{/* Group icon */}}
@@ -204,7 +206,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
 
                           <li>
                             {{/* Collection level (Layer 2) */}}
-                            <details {{ if and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0) }}open{{ end }}>
+                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $collectionTitle }}open{{ end }}{{ else }}{{ if or $autoOpenAll (and $autoOpenFirstCollection (eq $groupIndex 0) (eq $collIndex 0)) }}open{{ end }}{{ end }}>
                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.75rem;">
                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                   {{/* Folder icon */}}
@@ -259,7 +261,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
                                           {{ end }}
 
                                           <li>
-                                            <details>
+                                            <details {{ if ne $autoOpenPattern "" }}{{ if findMatch $autoOpenPattern $childTitle }}open{{ end }}{{ else }}{{ if $autoOpenAll }}open{{ end }}{{ end }}>
                                               <summary class="summary flex justify-between items-center rounded select-none" style="padding: 0 2rem 0 0.5rem;">
                                                 <div class="flex items-center gap-10 min-width-0 flex-1">
                                                   {{/* Folder icon */}}
@@ -442,7 +444,7 @@ A comprehensive Raindrop.io bookmarks widget that displays your groups, collecti
 
 ### Required
 
--   `RAINDROP_TOKEN`: Your Raindrop.io API token
+- `RAINDROP_TOKEN`: Your Raindrop.io API token
 
 ### How to Get Your Token
 
@@ -466,22 +468,26 @@ The template includes several configuration variables at the top:
 ```yaml
 {{ $autoOpenFirstGroup := true }}        # Auto-open all groups by default
 {{ $autoOpenFirstCollection := true }}   # Auto-open first collection in each group
+{{ $autoOpenAll := false }}              # Open all groups, collections, and sub-collections
+{{ $autoOpenPattern := "" }}             # Regex pattern to auto-open matching names (highest priority)
 {{ $showCover := true }}                 # Show cover images for bookmarks
 ```
 
--   **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
--   **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
--   **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
+- **`$autoOpenFirstGroup`**: Set to `true` to expand all groups automatically, `false` to keep them collapsed
+- **`$autoOpenFirstCollection`**: Set to `true` to expand the first collection in the first group, `false` to keep all collections collapsed
+- **`$autoOpenAll`**: Set to `true` to expand all groups, collections, and sub-collections by default. When enabled, overrides `$autoOpenFirstGroup` and `$autoOpenFirstCollection`
+- **`$autoOpenPattern`**: Regex pattern to auto-open groups/collections/sub-collections whose name matches. **Highest priority** — when set (non-empty), overrides all other auto-open options. Example: `"^(收藏夾|Entertainment)$"` to open only those named exactly "收藏夾" or "Entertainment"
+- **`$showCover`**: Set to `true` to display cover images for bookmarks, `false` to hide them and show only text
 
 ### Responsive Grid Layout
 
 The widget automatically adjusts the number of columns based on the container width using container queries:
 
--   **> 900px**: 3 columns
--   **640px - 900px**: 2 columns
--   **< 640px**: 1 column (mobile) with optimized compact layout:
-    -   Cover images reduced to 24px × 24px
-    -   Date and tag text size reduced to `--font-size-h5`
+- **> 900px**: 3 columns
+- **640px - 900px**: 2 columns
+- **< 640px**: 1 column (mobile) with optimized compact layout:
+    - Cover images reduced to 24px × 24px
+    - Date and tag text size reduced to `--font-size-h5`
 
 ### Cache Duration
 
@@ -515,9 +521,9 @@ The widget uses multiple Raindrop API endpoints to build a complete hierarchy:
 
 ### API Limitations
 
--   The widget displays the **50 most recent bookmarks** due to Raindrop API's per-page limit
--   Collections are ordered according to your Raindrop.io group settings
--   Hidden groups are automatically filtered out
+- The widget displays the **50 most recent bookmarks** due to Raindrop API's per-page limit
+- Collections are ordered according to your Raindrop.io group settings
+- Hidden groups are automatically filtered out
 
 ## Troubleshooting
 
@@ -527,25 +533,25 @@ If your token expires (HTTP 401), the widget will automatically display a link t
 
 ### No Bookmarks Showing
 
--   Ensure you have bookmarks in your Raindrop account
--   Check that the `RAINDROP_TOKEN` environment variable is correctly set
--   Verify your token has not expired
+- Ensure you have bookmarks in your Raindrop account
+- Check that the `RAINDROP_TOKEN` environment variable is correctly set
+- Verify your token has not expired
 
 ### Groups or Collections Not Expanding
 
--   Make sure you're clicking on the group/collection name or folder icon
--   Some collections may be empty or have no bookmarks in the recent 50 items
--   Check the `$autoOpenFirstGroup` and `$autoOpenFirstCollection` configuration options
+- Make sure you're clicking on the group/collection name or folder icon
+- Some collections may be empty or have no bookmarks in the recent 50 items
+- Check the `$autoOpenFirstGroup` and `$autoOpenFirstCollection` configuration options
 
 ### Collections Not Showing in Groups
 
--   Ensure your collections are assigned to groups in Raindrop.io
--   Hidden groups won't be displayed (check group settings in Raindrop.io)
+- Ensure your collections are assigned to groups in Raindrop.io
+- Hidden groups won't be displayed (check group settings in Raindrop.io)
 
 ## Credits
 
--   Uses [Raindrop.io API](https://developer.raindrop.io)
--   Designed for [Glance](https://github.com/glanceapp/glance)
+- Uses [Raindrop.io API](https://developer.raindrop.io)
+- Designed for [Glance](https://github.com/glanceapp/glance)
 
 ## License
 
