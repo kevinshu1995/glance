@@ -10,7 +10,7 @@
       {{ $autoOpenFirstGroup := true }}  {{/* Auto-open first group */}}
       {{ $autoOpenFirstCollection := true }}  {{/* Auto-open first collection in opened group */}}
       {{ $autoOpenAll := false }}  {{/* Open all groups and collections */}}
-      {{ $autoOpenPattern := "^(收藏夾)$" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
+      {{ $autoOpenPattern := "^(Bookmarks)$" }}  {{/* Regex pattern to auto-open matching names (highest priority, overrides all other auto-open options). e.g. "^(收藏夾|Entertainment)$" */}}
       {{ $showCover := true }}  {{/* Show cover images for bookmarks */}}
 
       {{/* Fetch user data for groups */}}
